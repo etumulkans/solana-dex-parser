@@ -193,17 +193,19 @@ export class TokenScanner {
   }
 
   public async startScanning(): Promise<void> {
-    while (true) {
-      try {
-        console.log('Starting main loop...');
-        this.stream = await this.reconnectStream();
-        await this.handleStreamEvents(this.stream);
-      } catch (error) {
-        console.error('Main loop error:', error);
-        console.log('Retrying in 5 seconds...');
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    }
+    this.stream = await this.reconnectStream();
+    await this.handleStreamEvents(this.stream);
+    // while (true) {
+    //   try {
+    //     console.log
+    //     this.stream = await this.reconnectStream();
+    //     await this.handleStreamEvents(this.stream);
+    //   } catch (error) {
+    //     console.error('Main loop error:', error);
+    //     console.log('Retrying in 5 seconds...');
+    //     await new Promise((resolve) => setTimeout(resolve, 5000));
+    //   }
+    // }
   }
 
   public async stopScanning(): Promise<void> {
