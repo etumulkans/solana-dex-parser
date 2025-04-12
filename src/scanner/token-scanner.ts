@@ -40,7 +40,7 @@ export class TokenScanner {
       transactionsStatus: {},
       entry: {},
       blocks: {},
-      blocksMeta: { blockmetadata: {} },
+      blocksMeta: { },
       commitment: CommitmentLevel.PROCESSED,
       accountsDataSlice: [],
       ping: undefined,
