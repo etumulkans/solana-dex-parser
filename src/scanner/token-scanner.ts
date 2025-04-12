@@ -154,6 +154,7 @@ export class TokenScanner {
         version: 'legacy'
       };
       const trades = this.parser.parseTrades(txInfo);
+      console.log('Parsed trades:', trades);
       
       if (trades.length > 0) {
         this.processTrades(trades);
