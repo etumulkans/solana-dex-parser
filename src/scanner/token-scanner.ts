@@ -137,7 +137,7 @@ export class TokenScanner {
         // Fallback for any other type
         return key.toString();
       });
-
+      console.log('accountKeys', accountKeys);
       const txInfo: VersionedTransactionResponse = {
         blockTime: Math.floor(Date.now() / 1000),
         meta: null,
