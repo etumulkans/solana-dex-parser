@@ -76,6 +76,7 @@ export class TokenScanner {
   }
 
   private async handleStreamEvents(stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate>): Promise<void> {
+    console.log('Starting to handle stream events...');
     return new Promise<void>((resolve, reject) => {
       stream.on('data', async (data) => {
         try {
