@@ -67,12 +67,12 @@ export class TokenScanner {
     request: SubscribeRequest
   ): Promise<void> {
     console.log('Sending subscribe request...');
-    return new Promise<void>((_, reject) => {
+    return new Promise<void>((resolve, reject) => {
       stream.write(request, (err: Error | null) => {
         if (err) {
           reject(err);
         } else {
-          resolve(); // Resolve the promise when the write operation succeeds
+          resolve();
         }
       });
     });
