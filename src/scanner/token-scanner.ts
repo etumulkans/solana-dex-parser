@@ -153,19 +153,7 @@ export class TokenScanner {
         },
         version: 'legacy'
       };
-
-      // Force parser to recognize as Pumpswap
-      const dexInfo = {
-        programId: DEX_PROGRAMS.PUMP_SWAP.id,
-        amm: DEX_PROGRAMS.PUMP_SWAP.name
-      };
-
-      const parser = new DexParser();
-      const result = parser.parseAll(txInfo as unknown as SolanaTransaction, {
-        programIds: [DEX_PROGRAMS.PUMP_SWAP.id], // Only parse Pumpswap
-        tryUnknowDEX: false
-      });
-      const trades = result.trades;
+      const trades = this.parser.parseTrades(txInfo);
       console.log('Parsed trades:', trades);
       
       if (trades.length > 0) {
