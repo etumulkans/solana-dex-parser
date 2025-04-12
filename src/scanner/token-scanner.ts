@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable prettier/prettier */
 import Client, { CommitmentLevel, SubscribeRequest, SubscribeUpdate } from '@triton-one/yellowstone-grpc';
 import { ClientDuplexStream } from '@grpc/grpc-js';
@@ -140,7 +141,7 @@ export class TokenScanner {
               programIdIndex: instruction.programIdIndex
             })),
             recentBlockhash: '',
-            accountKeys: [DEX_PROGRAMS.PUMP_SWAP.id], // Add Pumpswap program ID
+            accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => key.toString()) || [],
             header: {
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
