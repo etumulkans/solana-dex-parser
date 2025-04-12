@@ -3,7 +3,8 @@ import Client, { CommitmentLevel, SubscribeRequest, SubscribeUpdate } from '@tri
 import { ClientDuplexStream } from '@grpc/grpc-js';
 import { DexParser } from '../dex-parser';
 import { TradeInfo } from '../types';
-import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js'; // Ensure this is the correct module
+import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js';
+import base58 from 'bs58';
 
 interface TokenMetrics {
   price: number;
@@ -124,12 +125,8 @@ export class TokenScanner {
     if (!data.transaction?.transaction) return;
     
     try {
-      // Instead of converting to web3.js format, pass the relevant data directly
-
-      // Removed unused variable 'transfers'
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
-      // Create minimal transaction info
       const txInfo: VersionedTransactionResponse = {
         blockTime: Math.floor(Date.now() / 1000),
         meta: null,
@@ -138,7 +135,7 @@ export class TokenScanner {
           message: {
             instructions: instructions.map(instruction => ({
               accounts: Array.from(instruction.accounts),
-              data: Buffer.from(instruction.data).toString('base64'),
+              data: base58.encode(Buffer.from(instruction.data)),
               programIdIndex: instruction.programIdIndex
             })),
             recentBlockhash: '',
@@ -150,10 +147,8 @@ export class TokenScanner {
             }
           } as unknown as VersionedMessage,
           signatures: [
-            // Safely handle potentially invalid base58 characters
-            Buffer.from(data.transaction.transaction.signature || '')
-              .toString('base64')
-              .replace(/[^A-Za-z0-9+/=]/g, '') // Sanitize base64 string
+            // Properly encode signature as base58
+            base58.encode(Buffer.from(data.transaction.transaction.signature || ''))
           ]
         },
         version: 'legacy'
