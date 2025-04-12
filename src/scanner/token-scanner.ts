@@ -16,7 +16,7 @@ export class TokenScanner {
   private parser: DexParser;
   private tokenAddress: string;
   private metrics: Map<number, TokenMetrics>;
-  private readonly ENDPOINT = 'https://grpc.solanavibestation.com:10000';
+  private readonly ENDPOINT = 'http://grpc.solanavibestation.com:10000';
   private stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
 
   constructor(tokenAddress: string) {
@@ -66,6 +66,7 @@ export class TokenScanner {
     stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate>,
     request: SubscribeRequest
   ): Promise<void> {
+    console.log('Sending subscribe request...');
     return new Promise<void>((_, reject) => {
       stream.write(request, (err: Error | null) => {
         if (err) {
