@@ -195,6 +195,7 @@ export class TokenScanner {
   public async startScanning(): Promise<void> {
     while (true) {
       try {
+        console.log('Starting main loop...');
         this.stream = await this.reconnectStream();
         await this.handleStreamEvents(this.stream);
       } catch (error) {
