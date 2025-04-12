@@ -101,7 +101,7 @@ export class DexParser {
       liquidities: [],
       transfers: [],
     };
-
+ 
     try {
       const adapter = new TransactionAdapter(tx, config);
       console.log('Parsing transaction:', adapter);

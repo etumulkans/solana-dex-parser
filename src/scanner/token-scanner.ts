@@ -5,6 +5,7 @@ import { DexParser } from '../dex-parser';
 import { TradeInfo } from '../types';
 import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js';
 import base58 from 'bs58';
+import { DEX_PROGRAMS } from '../constants';
 
 interface TokenMetrics {
   price: number;
@@ -139,7 +140,7 @@ export class TokenScanner {
               programIdIndex: instruction.programIdIndex
             })),
             recentBlockhash: '',
-            accountKeys: [],
+            accountKeys: [DEX_PROGRAMS.PUMP_SWAP.id], // Add Pumpswap program ID
             header: {
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
@@ -147,13 +148,24 @@ export class TokenScanner {
             }
           } as unknown as VersionedMessage,
           signatures: [
-            // Properly encode signature as base58
             base58.encode(Buffer.from(data.transaction.transaction.signature || ''))
           ]
         },
         version: 'legacy'
       };
-      const trades = this.parser.parseTrades(txInfo);
+
+      // Force parser to recognize as Pumpswap
+      const dexInfo = {
+        programId: DEX_PROGRAMS.PUMP_SWAP.id,
+        amm: DEX_PROGRAMS.PUMP_SWAP.name
+      };
+
+      const parser = new DexParser();
+      const result = parser.parseAll(txInfo as unknown as SolanaTransaction, {
+        programIds: [DEX_PROGRAMS.PUMP_SWAP.id], // Only parse Pumpswap
+        tryUnknowDEX: false
+      });
+      const trades = result.trades;
       console.log('Parsed trades:', trades);
       
       if (trades.length > 0) {
