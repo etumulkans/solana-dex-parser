@@ -142,21 +142,24 @@ export class TokenScanner {
             })),
             recentBlockhash: '',
             accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => {
-              // Ensure we're properly handling the Buffer data
+              // Handle PublicKey type
+              if (typeof key === 'object' && key !== null && 'toBase58' in key) {
+                return key.toBase58();
+              }
+              // Handle PublicKey-like objects
+              if (typeof key === 'object' && key !== null && 'toString' in key) {
+                return key.toString();
+              }
+              // Handle Buffer
               if (Buffer.isBuffer(key)) {
                 return base58.encode(key);
               }
-              // If it's already a string, return as is
-              if (typeof key === 'string') {
-                return key;
-              }
-              // If it's Uint8Array, convert to Buffer first
+              // Handle Uint8Array
               if (key instanceof Uint8Array) {
                 return base58.encode(Buffer.from(key));
               }
-              // Fallback
-              return '';
-            }) || [DEX_PROGRAMS.PUMP_SWAP.id],
+              return String(key);
+            }).filter(Boolean) || [DEX_PROGRAMS.PUMP_SWAP.id],
             header: {
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
