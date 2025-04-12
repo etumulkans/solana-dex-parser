@@ -122,7 +122,7 @@ export class TokenScanner {
   }
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
-    console.log('Received transaction:', data);
+   // console.log('Received transaction:', data);
     if (!data.transaction?.transaction) return;
     
     try {
