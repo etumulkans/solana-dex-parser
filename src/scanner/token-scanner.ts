@@ -114,8 +114,9 @@ export class TokenScanner {
   }
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
+    console.log('Received transaction:', data);
     if (!data.transaction?.transaction) return;
-    console.log('Received transaction:', data.transaction.transaction);
+    
     try {
       // Convert the gRPC transaction format to Solana web3.js format
       const txData: {
