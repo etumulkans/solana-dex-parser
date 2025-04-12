@@ -141,7 +141,22 @@ export class TokenScanner {
               programIdIndex: instruction.programIdIndex
             })),
             recentBlockhash: '',
-            accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => key.toString()) || [],
+            accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => {
+              // Ensure we're properly handling the Buffer data
+              if (Buffer.isBuffer(key)) {
+                return base58.encode(key);
+              }
+              // If it's already a string, return as is
+              if (typeof key === 'string') {
+                return key;
+              }
+              // If it's Uint8Array, convert to Buffer first
+              if (key instanceof Uint8Array) {
+                return base58.encode(Buffer.from(key));
+              }
+              // Fallback
+              return '';
+            }) || [DEX_PROGRAMS.PUMP_SWAP.id],
             header: {
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
