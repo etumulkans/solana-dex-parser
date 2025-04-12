@@ -137,10 +137,45 @@ export class TokenScanner {
         // Fallback for any other type
         return key.toString();
       });
-      console.log('accountKeys', accountKeys);
       const txInfo: VersionedTransactionResponse = {
         blockTime: Math.floor(Date.now() / 1000),
-        meta: null,
+        meta: {
+          err: data.transaction.transaction.meta?.err || null,
+          fee: Number(data.transaction.transaction.meta?.fee) || 0,
+          postBalances: (data.transaction.transaction.meta?.postBalances || []).map(Number),
+          preBalances: (data.transaction.transaction.meta?.preBalances || []).map(Number),
+          innerInstructions: (data.transaction.transaction.meta?.innerInstructions || []).map(inner => ({
+            index: inner.index,
+            instructions: inner.instructions.map(ix => ({
+              programIdIndex: ix.programIdIndex,
+              accounts: Array.from(ix.accounts),
+              data: base58.encode(Buffer.from(ix.data))
+            }))
+          })),
+          logMessages: data.transaction.transaction.meta?.logMessages || [],
+          postTokenBalances: (data.transaction.transaction.meta?.postTokenBalances || []).map(balance => ({
+            accountIndex: balance.accountIndex,
+            mint: balance.mint,
+            owner: balance.owner,
+            uiTokenAmount: balance.uiTokenAmount || {
+              amount: "0",
+              decimals: 0,
+              uiAmount: 0,
+              uiAmountString: "0"
+            }
+          })),
+          preTokenBalances: (data.transaction.transaction.meta?.preTokenBalances || []).map(balance => ({
+            accountIndex: balance.accountIndex,
+            mint: balance.mint,
+            owner: balance.owner,
+            uiTokenAmount: balance.uiTokenAmount || {
+              amount: "0",
+              decimals: 0,
+              uiAmount: 0,
+              uiAmountString: "0"
+            }
+          })),
+        },
         slot: data.slot ? Number(data.slot) : 0,
         transaction: {
           message: {
