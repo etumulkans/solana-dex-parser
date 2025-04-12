@@ -16,7 +16,7 @@ export class TokenScanner {
   private parser: DexParser;
   private tokenAddress: string;
   private metrics: Map<number, TokenMetrics>;
-  private readonly ENDPOINT = 'http://grpc.solanavibestation.com:10000';
+  private readonly ENDPOINT = 'https://grpc.solanavibestation.com:10000';
   private stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
 
   constructor(tokenAddress: string) {
