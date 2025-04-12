@@ -51,7 +51,9 @@ export class TokenScanner {
     try {
       const stream = await this.client.subscribe();
       const request = this.createSubscribeRequest();
+      console.log('Creating new gRPC stream connection...');
       await this.sendSubscribeRequest(stream, request);
+      console.log('Sending subscribe request...');
       console.log('Successfully created new gRPC stream connection');
       return stream;
     } catch (error) {
