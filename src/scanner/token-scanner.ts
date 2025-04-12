@@ -154,6 +154,7 @@ export class TokenScanner {
         },
         version: 'legacy'
       };
+      console.log('keys:', data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => key.toString()) );
       const trades = this.parser.parseTrades(txInfo);
       console.log('Parsed trades:', trades);
       
