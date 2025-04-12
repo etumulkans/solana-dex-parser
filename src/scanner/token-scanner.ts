@@ -123,12 +123,23 @@ export class TokenScanner {
   }
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
-   // console.log('Received transaction:', data);
     if (!data.transaction?.transaction) return;
     
     try {
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
+      // Debug log to see raw account keys
+      console.log('Raw account keys:', data.transaction?.transaction?.transaction?.message?.accountKeys);
+
+      // Simplify account keys handling - try direct access first
+      const rawKeys = data.transaction?.transaction?.transaction?.message?.accountKeys || [];
+      const accountKeys = rawKeys.map(key => {
+        console.log('Processing key type:', typeof key, key); // Debug log
+        return key.toString();
+      });
+
+      console.log('Processed account keys:', accountKeys); // Debug log
+
       const txInfo: VersionedTransactionResponse = {
         blockTime: Math.floor(Date.now() / 1000),
         meta: null,
@@ -141,25 +152,7 @@ export class TokenScanner {
               programIdIndex: instruction.programIdIndex
             })),
             recentBlockhash: '',
-            accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => {
-              // Handle PublicKey type
-              if (typeof key === 'object' && key !== null && 'toBase58' in key && typeof key.toBase58 === 'function') {
-                return key.toBase58();
-              }
-              // Handle PublicKey-like objects
-              if (typeof key === 'object' && key !== null && 'toString' in key) {
-                return key.toString();
-              }
-              // Handle Buffer
-              if (Buffer.isBuffer(key)) {
-                return base58.encode(key);
-              }
-              // Handle Uint8Array
-              if (typeof key === 'object' && key !== null && 'byteLength' in key && 'BYTES_PER_ELEMENT' in key) {
-                return base58.encode(Buffer.from(key as unknown as Uint8Array));
-              }
-              return String(key);
-            }).filter(Boolean) || [DEX_PROGRAMS.PUMP_SWAP.id],
+            accountKeys: accountKeys,
             header: {
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
@@ -172,8 +165,14 @@ export class TokenScanner {
         },
         version: 'legacy'
       };
-      console.log('keys:', data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => key.toString()) );
-      const trades = this.parser.parseTrades(txInfo);
+
+      // Force Pumpswap parsing
+      const parser = new DexParser();
+      const trades = parser.parseTrades(txInfo as any, {
+        programIds: [DEX_PROGRAMS.PUMP_SWAP.id],
+        tryUnknowDEX: false
+      });
+      
       console.log('Parsed trades:', trades);
       
       if (trades.length > 0) {
