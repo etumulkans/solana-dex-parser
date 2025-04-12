@@ -3,6 +3,7 @@ import Client, { CommitmentLevel, SubscribeRequest, SubscribeUpdate } from '@tri
 import { ClientDuplexStream } from '@grpc/grpc-js';
 import { DexParser } from '../dex-parser';
 import { TradeInfo } from '../types';
+import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js'; // Ensure this is the correct module
 
 interface TokenMetrics {
   price: number;
@@ -80,6 +81,7 @@ export class TokenScanner {
 
   private async handleStreamEvents(stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate>): Promise<void> {
     console.log('Starting to handle stream events...');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return new Promise<void>((resolve, reject) => {
       stream.on('data', async (data) => {
         try {
@@ -122,70 +124,36 @@ export class TokenScanner {
     if (!data.transaction?.transaction) return;
     
     try {
-      // Convert the gRPC transaction format to Solana web3.js format
-      const txData: {
-        slot: number;
-        blockTime: number;
-        transaction: {
-          message: {
-            header: {
-              numRequiredSignatures: number;
-              numReadonlySignedAccounts: number;
-              numReadonlyUnsignedAccounts: number;
-            };
-            accountKeys: string[];
-            recentBlockhash: string;
-            instructions: any[];
-            indexToProgramIds: any[];
-            version: string;
-            staticAccountKeys: string[];
-            compiledInstructions: any[];
-          };
-          signatures: string[];
-        };
-        meta: {
-          fee: number;
-          logMessages: string[];
-          postBalances: number[];
-          preBalances: number[];
-          status: { Ok: null } | null;
-        } | null;
-      } = {
+      // Instead of converting to web3.js format, pass the relevant data directly
+
+      // Removed unused variable 'transfers'
+      const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
+      
+      // Create minimal transaction info
+      const txInfo: VersionedTransactionResponse = {
+        blockTime: Math.floor(Date.now() / 1000),
+        meta: null,
         slot: data.slot ? Number(data.slot) : 0,
-        blockTime: Math.floor(Date.now() / 1000), // Current timestamp as fallback
         transaction: {
           message: {
+            instructions: instructions.map(instruction => ({
+              accounts: Array.from(instruction.accounts),
+              data: Buffer.from(instruction.data).toString('base64'),
+              programIdIndex: instruction.programIdIndex
+            })),
+            recentBlockhash: '',
+            accountKeys: [],
             header: {
-              numRequiredSignatures: 0,
               numReadonlySignedAccounts: 0,
               numReadonlyUnsignedAccounts: 0,
-            },
-            accountKeys: [],
-            recentBlockhash: '',
-            instructions: [],
-            indexToProgramIds: [],
-            version: 'legacy',
-            staticAccountKeys: [],
-            compiledInstructions: [],
-          },
-          signatures: [
-            Buffer.from(data.transaction.transaction.signature || '').toString('base64')
-          ]
-        },
-        meta: data.transaction.transaction.meta 
-          ? {
-              ...data.transaction.transaction.meta,
-              fee: Number(data.transaction.transaction.meta.fee),
-              logMessages: data.transaction.transaction.meta.logMessages || [],
-              postBalances: (data.transaction.transaction.meta.postBalances || []).map(Number),
-              preBalances: (data.transaction.transaction.meta.preBalances || []).map(Number),
-              status: { Ok: null } // Assuming successful transaction
+              numRequiredSignatures: 0
             }
-          : null
+          } as unknown as VersionedMessage,
+          signatures: [Buffer.from(data.transaction.transaction.signature || '').toString('base64')]
+        },
+        version: 'legacy'
       };
-
-      // Assuming SolanaTransaction is a placeholder, replace it with the correct type or define it
-      const trades = this.parser.parseTrades(txData as unknown as any); // Replace 'any' with the correct type if known
+      const trades = this.parser.parseTrades(txInfo);
       
       if (trades.length > 0) {
         this.processTrades(trades);
@@ -265,9 +233,4 @@ export class TokenScanner {
     `);
   }
 }
-function resolve(): void {
-  // This function is used to resolve the promise in sendSubscribeRequest.
-  // Since the promise is resolved when the write operation succeeds,
-  // this function can remain empty as it serves as a placeholder for resolution.
-}
- 
+
