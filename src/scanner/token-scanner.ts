@@ -128,17 +128,15 @@ export class TokenScanner {
     try {
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
-      // Debug log to see raw account keys
-      console.log('Raw account keys:', data.transaction?.transaction?.transaction?.message?.accountKeys);
-
-      // Simplify account keys handling - try direct access first
+      // Get raw keys and properly encode them to base58
       const rawKeys = data.transaction?.transaction?.transaction?.message?.accountKeys || [];
       const accountKeys = rawKeys.map(key => {
-        console.log('Processing key type:', typeof key, key); // Debug log
+        if (Buffer.isBuffer(key)) {
+          return base58.encode(key);
+        }
+        // Fallback for any other type
         return key.toString();
       });
-
-      console.log('Processed account keys:', accountKeys); // Debug log
 
       const txInfo: VersionedTransactionResponse = {
         blockTime: Math.floor(Date.now() / 1000),
@@ -173,9 +171,8 @@ export class TokenScanner {
         tryUnknowDEX: false
       });
       
-      console.log('Parsed trades:', trades);
-      
       if (trades.length > 0) {
+        console.log('Found trades:', trades);
         this.processTrades(trades);
       }
     } catch (error) {
