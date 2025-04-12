@@ -143,7 +143,7 @@ export class TokenScanner {
             recentBlockhash: '',
             accountKeys: data.transaction?.transaction?.transaction?.message?.accountKeys?.map(key => {
               // Handle PublicKey type
-              if (typeof key === 'object' && key !== null && 'toBase58' in key) {
+              if (typeof key === 'object' && key !== null && 'toBase58' in key && typeof key.toBase58 === 'function') {
                 return key.toBase58();
               }
               // Handle PublicKey-like objects
@@ -155,8 +155,8 @@ export class TokenScanner {
                 return base58.encode(key);
               }
               // Handle Uint8Array
-              if (key instanceof Uint8Array) {
-                return base58.encode(Buffer.from(key));
+              if (typeof key === 'object' && key !== null && 'byteLength' in key && 'BYTES_PER_ELEMENT' in key) {
+                return base58.encode(Buffer.from(key as unknown as Uint8Array));
               }
               return String(key);
             }).filter(Boolean) || [DEX_PROGRAMS.PUMP_SWAP.id],
