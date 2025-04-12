@@ -149,7 +149,12 @@ export class TokenScanner {
               numRequiredSignatures: 0
             }
           } as unknown as VersionedMessage,
-          signatures: [Buffer.from(data.transaction.transaction.signature || '').toString('base64')]
+          signatures: [
+            // Safely handle potentially invalid base58 characters
+            Buffer.from(data.transaction.transaction.signature || '')
+              .toString('base64')
+              .replace(/[^A-Za-z0-9+/=]/g, '') // Sanitize base64 string
+          ]
         },
         version: 'legacy'
       };
