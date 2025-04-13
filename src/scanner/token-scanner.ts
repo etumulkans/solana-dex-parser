@@ -250,7 +250,7 @@ export class TokenScanner {
         continue;
       }
 
-      const timestamp = trade.timestamp; // Already in seconds
+      const timestamp = Math.floor(trade.timestamp / 1000) * 1000;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
       // Get token amount regardless of buy or sell
@@ -263,7 +263,7 @@ export class TokenScanner {
         Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
         Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
-      const solPrice = isSell ? solAmount / tokenAmount : tokenAmount / solAmount;
+      const solPrice = isSell ? solAmount / tokenAmount : solAmount / tokenAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
       if (usdPrice < 0.00000001) {
@@ -285,7 +285,7 @@ export class TokenScanner {
         timestamp,
       };
 
-      // Update volumes based on time windows (all in seconds)
+      // Update volumes based on time windows
       const timeDiff = now - timestamp;
       if (timeDiff <= 60 * 1000) { // 1 minute
         currentMetrics.volume1m += volumeUSD;
