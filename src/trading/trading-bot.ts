@@ -278,13 +278,13 @@ export class TradingBot {
       total: positionSize,
     });
 
-    console.log(`
-      BUY EXECUTED
-      Price: $${currentData.price.toFixed(8)}
-      Amount: ${tokenAmount} tokens
-      Total: $${positionSize.toFixed(2)}
-      Timestamp: ${new Date(currentData.timestamp * 1000).toISOString()}
-    `);
+    // console.log(`
+    //   BUY EXECUTED
+    //   Price: $${currentData.price.toFixed(8)}
+    //   Amount: ${tokenAmount} tokens
+    //   Total: $${positionSize.toFixed(2)}
+    //   Timestamp: ${new Date(currentData.timestamp * 1000).toISOString()}
+    // `);
   }
 
   private executeSell(currentData: MarketData): void {
