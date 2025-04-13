@@ -112,12 +112,12 @@ export class TradingBot {
 
     // Buy conditions:
     // 1. Volume spike detected
-    // 2. Positive price movement
+    // 2. Significant positive price movement (> PRICE_CHANGE_THRESHOLD)
     // 3. Strong buy pressure
     // 4. Positive momentum
     return (
       volumeSpike &&
-      priceMovement > 0 &&
+      priceMovement >= this.PRICE_CHANGE_THRESHOLD && // Added threshold check
       buyPressure > 0.6 &&
       momentum > 0 &&
       currentData.volume1m >= this.MIN_VOLUME_USD
@@ -152,7 +152,15 @@ export class TradingBot {
     const recentPrices = this.marketData.slice(-3);
     if (recentPrices.length < 3) return 0;
 
-    return (currentData.price - recentPrices[0].price) / recentPrices[0].price;
+    // Calculate percentage change
+    const priceChange = (currentData.price - recentPrices[0].price) / recentPrices[0].price;
+
+    // Log significant price movements
+    if (Math.abs(priceChange) >= this.PRICE_CHANGE_THRESHOLD) {
+      console.log(`Significant price movement detected: ${(priceChange * 100).toFixed(2)}%`);
+    }
+
+    return priceChange;
   }
 
   private calculateBuyPressure(): number {
@@ -178,9 +186,16 @@ export class TradingBot {
     );
 
     // Detect potential reversal patterns
-    const wasIncreasing = priceChanges[1] > 0;
-    const isDecreasing = priceChanges[2] < 0;
+    const wasIncreasing = priceChanges[1] > this.PRICE_CHANGE_THRESHOLD; // Modified to use threshold
+    const isDecreasing = priceChanges[2] < -this.PRICE_CHANGE_THRESHOLD; // Modified to use threshold
     const volumeDecreasing = currentData.volume1m < recentData[1].volume1m;
+
+    // Log potential reversals
+    if (wasIncreasing && isDecreasing) {
+      console.log(
+        `Potential reversal detected: Up ${(priceChanges[1] * 100).toFixed(2)}% -> Down ${(priceChanges[2] * 100).toFixed(2)}%`
+      );
+    }
 
     return wasIncreasing && isDecreasing && volumeDecreasing;
   }
