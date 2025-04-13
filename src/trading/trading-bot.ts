@@ -31,25 +31,26 @@ interface TradeLog {
 
 export class TradingBot {
   // Volume-related thresholds
-  private readonly VOLUME_SPIKE_THRESHOLD = 3.0; // Reduced from 3.0 due to consistent volume
-  private readonly MIN_VOLUME_USD = 500; // Reduced since we see active trading at lower volumes
-  
+  private readonly VOLUME_SPIKE_THRESHOLD = 2.0; // Lower from 3.0 to allow more trades
+  private readonly MIN_VOLUME_USD = 300;         // Reduced from 500 to capture smaller volume
+
   // Price movement thresholds
-  private readonly PRICE_CHANGE_THRESHOLD = 0.02; // 1% - More sensitive to smaller moves
-  private readonly REVERSAL_THRESHOLD = 0.01; // 0.8% - Quick to catch reversals
-  
+  private readonly PRICE_CHANGE_THRESHOLD = 0.02;  // 2%
+  private readonly REVERSAL_THRESHOLD = 0.01;      // 1%
+
   // Risk management
-  private readonly PROFIT_TARGET = 0.1; // 5% - Faster profit taking
-  private readonly STOP_LOSS = 0.02; // 2% - Tighter stop loss
-  private readonly MAX_HOLD_TIME = 30; // 30 seconds - Quick trades based on chart
-  
+  private readonly PROFIT_TARGET = 0.03; // 3% - smaller, faster profit taking
+  private readonly STOP_LOSS = 0.015;    // 1.5% - tighter stop to cut losers early
+  private readonly MAX_HOLD_TIME = 20;   // 20 seconds - shortened hold time for quick scalps
+
   // Trade execution
-  private readonly TRADE_COOLDOWN = 15; // 15 seconds between trades
+  private readonly TRADE_COOLDOWN = 20;  // 20 seconds between trades to reduce overtrading
   private readonly FIXED_TOKEN_AMOUNT = 1000;
-  private readonly TREND_WINDOW = 3; // Shorter trend window due to volatility
-  
+  private readonly TREND_WINDOW = 3;
+
   // Buy pressure threshold
-  private readonly MIN_BUY_PRESSURE = 0.65; // Based on buyer/seller ratio (242/255)
+  private readonly MIN_BUY_PRESSURE = 0.60; // Lowered from 0.65 to trigger more buys
+
   private lastTradeTimestamp = 0;
 
   private marketData: MarketData[] = [];
@@ -64,7 +65,7 @@ export class TradingBot {
   constructor(
     private readonly tokenId: string,
     private readonly maxPositionSize: number = 1000, // Maximum position size in USD
-    private readonly priceDataWindow: number = 300 // 5 minutes of price data
+    private readonly priceDataWindow: number = 300   // 5 minutes of price data
   ) {
     this.logFile = path.join(process.cwd(), `trades_${tokenId}.json`);
     this.initializeLogFile();
@@ -108,18 +109,21 @@ export class TradingBot {
   }
 
   private analyzeMarketAndTrade(currentData: MarketData): void {
+    // If we already have a position, check if we need to sell
     if (this.currentPosition) {
       if (this.shouldSell(currentData)) {
         this.executeSell(currentData);
       }
-    } else if (this.shouldBuy(currentData)) {
+    }
+    // Otherwise, check if we should buy
+    else if (this.shouldBuy(currentData)) {
       this.executeBuy(currentData);
     }
   }
 
   private shouldBuy(currentData: MarketData): boolean {
     if (this.marketData.length < 2) return false;
-    
+
     // Cooldown check
     if (currentData.timestamp - this.lastTradeTimestamp < this.TRADE_COOLDOWN) {
       return false;
@@ -136,9 +140,9 @@ export class TradingBot {
     const momentum = this.calculateMomentum();
     const uptrend = this.isUptrend();
 
-    // Enhanced buy conditions with trend confirmation
+    // Buy conditions
     return (
-      (uptrend || buyPressure > this.MIN_BUY_PRESSURE) && // Buy if uptrend OR strong buy pressure
+      (uptrend || buyPressure > this.MIN_BUY_PRESSURE) &&
       volumeSpike &&
       priceMovement >= this.PRICE_CHANGE_THRESHOLD &&
       momentum > 0 &&
@@ -149,18 +153,16 @@ export class TradingBot {
   private shouldSell(currentData: MarketData): boolean {
     if (!this.currentPosition) return false;
 
-    const profitLoss = (currentData.price - this.currentPosition.entryPrice) / 
-                      this.currentPosition.entryPrice;
+    const profitLoss = (currentData.price - this.currentPosition.entryPrice) / this.currentPosition.entryPrice;
     const holdTime = currentData.timestamp - this.currentPosition.timestamp;
     const uptrend = this.isUptrend();
 
-    // Enhanced sell conditions with trend consideration
     return (
-      profitLoss <= -this.STOP_LOSS || // Stop loss
-      profitLoss >= this.PROFIT_TARGET || // Take profit
-      holdTime >= this.MAX_HOLD_TIME || // Max hold time
-      (!uptrend && this.detectReversalPattern(currentData)) || // Sell on reversal if not in uptrend
-      (!uptrend && profitLoss > 0.02) // Take smaller profits in downtrend
+      profitLoss <= -this.STOP_LOSS ||          // Stop loss
+      profitLoss >= this.PROFIT_TARGET ||       // Take profit
+      holdTime >= this.MAX_HOLD_TIME ||         // Max hold time
+      (!uptrend && this.detectReversalPattern(currentData)) ||
+      (!uptrend && profitLoss > 0.02)           // Early profit if trend falters
     );
   }
 
@@ -173,10 +175,8 @@ export class TradingBot {
     const recentPrices = this.marketData.slice(-3);
     if (recentPrices.length < 3) return 0;
 
-    // Calculate percentage change
     const priceChange = (currentData.price - recentPrices[0].price) / recentPrices[0].price;
 
-    // Log significant price movements
     if (Math.abs(priceChange) >= this.PRICE_CHANGE_THRESHOLD) {
       console.log(`Significant price movement detected: ${(priceChange * 100).toFixed(2)}%`);
     }
@@ -193,11 +193,10 @@ export class TradingBot {
   }
 
   private calculateMomentum(): number {
-    const prices = this.marketData.map((d) => d.price);
+    const prices = this.marketData.map(d => d.price);
     if (prices.length < 2) return 0;
 
-    const momentum = prices[prices.length - 1] - prices[0];
-    return momentum;
+    return prices[prices.length - 1] - prices[0];
   }
 
   private detectReversalPattern(currentData: MarketData): boolean {
@@ -208,12 +207,10 @@ export class TradingBot {
       i > 0 ? (d.price - recentData[i - 1].price) / recentData[i - 1].price : 0
     );
 
-    // Detect potential reversal patterns
-    const wasIncreasing = priceChanges[1] > this.PRICE_CHANGE_THRESHOLD; // Modified to use threshold
-    const isDecreasing = priceChanges[2] < -this.PRICE_CHANGE_THRESHOLD; // Modified to use threshold
+    const wasIncreasing = priceChanges[1] > this.PRICE_CHANGE_THRESHOLD;
+    const isDecreasing = priceChanges[2] < -this.PRICE_CHANGE_THRESHOLD;
     const volumeDecreasing = currentData.volume1m < recentData[1].volume1m;
 
-    // Log potential reversals
     if (wasIncreasing && isDecreasing) {
       console.log(
         `Potential reversal detected: Up ${(priceChanges[1] * 100).toFixed(2)}% -> Down ${(priceChanges[2] * 100).toFixed(2)}%`
@@ -225,7 +222,7 @@ export class TradingBot {
 
   private calculateAverageVolume(): number {
     if (this.marketData.length === 0) return 0;
-    const volumes = this.marketData.map((d) => d.volume1m);
+    const volumes = this.marketData.map(d => d.volume1m);
     return volumes.reduce((a, b) => a + b, 0) / volumes.length;
   }
 
@@ -233,11 +230,9 @@ export class TradingBot {
     if (this.marketData.length < this.TREND_WINDOW) return false;
 
     const recentPrices = this.marketData.slice(-this.TREND_WINDOW);
-    
-    // Calculate EMA-based trend
     const ema = this.calculateEMA(recentPrices.map(d => d.price), 3);
     const currentPrice = recentPrices[recentPrices.length - 1].price;
-    
+
     // Check if price is above EMA and making higher lows
     let makingHigherLows = true;
     for (let i = 2; i < recentPrices.length; i++) {
@@ -253,11 +248,11 @@ export class TradingBot {
   private calculateEMA(prices: number[], period: number): number {
     const multiplier = 2 / (period + 1);
     let ema = prices[0];
-    
+
     for (let i = 1; i < prices.length; i++) {
       ema = (prices[i] - ema) * multiplier + ema;
     }
-    
+
     return ema;
   }
 
@@ -273,8 +268,8 @@ export class TradingBot {
 
     this.wallet.usd -= positionSize;
     this.wallet.tokens += tokenAmount;
+    this.lastTradeTimestamp = currentData.timestamp;
 
-    // Log the trade
     this.logTrade({
       timestamp: currentData.timestamp,
       type: 'BUY',
@@ -296,20 +291,20 @@ export class TradingBot {
     if (!this.currentPosition) return;
 
     const saleAmount = this.currentPosition.amount * currentData.price;
-    const profitLoss = ((currentData.price - this.currentPosition.entryPrice) / this.currentPosition.entryPrice) * 100;
+    const profitLoss =
+      ((currentData.price - this.currentPosition.entryPrice) / this.currentPosition.entryPrice) * 100;
     const holdTime = currentData.timestamp - this.currentPosition.timestamp;
 
     this.wallet.usd += saleAmount;
     this.wallet.tokens -= this.currentPosition.amount;
 
-    // Log the trade with percentage gain/loss
     this.logTrade({
       timestamp: currentData.timestamp,
       type: 'SELL',
       price: currentData.price,
       amount: this.currentPosition.amount,
       total: saleAmount,
-      profitLoss: profitLoss, // Now in percentage
+      profitLoss: profitLoss, // percentage
       holdTime: holdTime,
     });
 
@@ -332,7 +327,9 @@ export class TradingBot {
       Wallet Status:
       USD: $${this.wallet.usd.toFixed(2)}
       Tokens: ${this.wallet.tokens}
-      ${this.currentPosition ? `Current Position: ${this.currentPosition.amount} tokens @ $${this.currentPosition.entryPrice}` : 'No active position'}
+      ${this.currentPosition
+        ? `Current Position: ${this.currentPosition.amount} tokens @ $${this.currentPosition.entryPrice}`
+        : 'No active position'}
     `;
   }
 
@@ -340,22 +337,27 @@ export class TradingBot {
     const trades = this.readTrades();
     if (trades.length === 0) return 'No trades yet';
 
-    const profits = trades.filter((t) => t.type === 'SELL' && t.profitLoss !== undefined).map((t) => t.profitLoss!);
+    const profits = trades
+      .filter(t => t.type === 'SELL' && t.profitLoss !== undefined)
+      .map(t => t.profitLoss!);
 
     const totalTrades = trades.length;
-    const profitableTrades = profits.filter((p) => p > 0).length;
+    // Only half the trades are sells, so for 'win rate', we compare positive sells with total sells
+    const totalSells = trades.filter(t => t.type === 'SELL').length;
+    const profitableTrades = profits.filter(p => p > 0).length;
     const averageProfit = profits.length > 0 ? profits.reduce((a, b) => a + b, 0) / profits.length : 0;
     const maxProfit = Math.max(...profits, 0);
     const maxLoss = Math.min(...profits, 0);
 
     return `
       Trading Stats for ${this.tokenId}:
-      Total Trades: ${totalTrades}
-      Profitable Trades: ${profitableTrades}
-      Win Rate: ${((profitableTrades / (trades.length / 2)) * 100).toFixed(2)}%
-      Average Profit/Loss: ${averageProfit.toFixed(2)}%
-      Max Profit: ${maxProfit.toFixed(2)}%
-      Max Loss: ${maxLoss.toFixed(2)}%
+      Total Trades (Buy + Sell): ${totalTrades}
+      Sell Trades: ${totalSells}
+      Profitable Sell Trades: ${profitableTrades}
+      Win Rate: ${totalSells ? ((profitableTrades / totalSells) * 100).toFixed(2) : 0}%
+      Average Profit/Loss (on sells): ${averageProfit.toFixed(2)}%
+      Max Profit (on single sell): ${maxProfit.toFixed(2)}%
+      Max Loss (on single sell): ${maxLoss.toFixed(2)}%
       Current Balance: $${this.wallet.usd.toFixed(2)}
       Current Tokens: ${this.wallet.tokens}
     `;
