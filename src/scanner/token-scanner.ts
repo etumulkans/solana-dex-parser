@@ -214,7 +214,7 @@ export class TokenScanner {
       });
       
       if (trades.length > 0) {
-        console.log('Raw trade data:', JSON.stringify(trades, null, 2));
+        console.log('Found trades:', trades);
         this.processTrades(trades);
       }
     } catch (error) {
