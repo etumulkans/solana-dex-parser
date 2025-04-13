@@ -219,7 +219,7 @@ export class TokenScanner {
       });
       
       if (trades.length > 0) {
-        console.log('Found trades:', trades);
+        
         this.processTrades(trades);
       }
     } catch (error) {
@@ -255,6 +255,10 @@ export class TokenScanner {
     const TOTAL_SUPPLY = 1_000_000_000;
     const now = Math.floor(Date.now() / 1000);
 
+    if (!trades.length || (trades[0].type !== 'BUY' && trades[0].type !== 'SELL')) {
+      return;
+    }
+    console.log('Found trades:', trades);
     for (const trade of trades) {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
