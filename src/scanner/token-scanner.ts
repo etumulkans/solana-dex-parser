@@ -11,7 +11,9 @@ import { DEX_PROGRAMS } from '../constants';
 interface TokenMetrics {
   price: number;
   marketCap: number;
-  volume24h: number;
+  volume1m: number;
+  volume5m: number;
+  volume1h: number;
   timestamp: number;
 }
 
@@ -239,10 +241,9 @@ export class TokenScanner {
   }
 
   private processTrades(trades: TradeInfo[]) {
-    // Current SOL price in USD
     const SOL_PRICE_USD = 130;
-    // Total supply of tokens
     const TOTAL_SUPPLY = 1_000_000_000;
+    const now = Date.now();
 
     for (const trade of trades) {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
@@ -258,37 +259,42 @@ export class TokenScanner {
 
       // Convert to numbers
       const tokenAmount = Number(tokenRawAmount) / Math.pow(10, isSell ? trade.inputToken.decimals : trade.outputToken.decimals);
-      const solAmount = Number(solRawAmount) / Math.pow(10, 9); // SOL decimals
+      const solAmount = Number(solRawAmount) / Math.pow(10, 9);
 
-      // Calculate price in SOL
-      let solPrice: number;
-      if (isSell) {
-        solPrice = solAmount / tokenAmount;
-      } else {
-        solPrice = solAmount / tokenAmount;
-      }
-
-      // Convert SOL price to USD
+      // Calculate price in SOL and USD
+      const solPrice = isSell ? solAmount / tokenAmount : solAmount / tokenAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
-      // Handle very small numbers
       if (usdPrice < 0.00000001) {
         usdPrice = Number(usdPrice.toExponential(8));
       }
 
-      // Calculate market cap
       const marketCap = usdPrice * TOTAL_SUPPLY;
+
+      // Calculate USD volume
+      const tradeVolumeUSD = tokenAmount * usdPrice;
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
         price: usdPrice,
         marketCap: marketCap,
-        volume24h: 0,
+        volume1m: 0,
+        volume5m: 0,
+        volume1h: 0,
         timestamp,
       };
 
-      // Update volume using the token amount
-      currentMetrics.volume24h += tokenAmount;
+      // Update volumes based on time windows
+      if (now - timestamp <= 60 * 1000) { // 1 minute
+        currentMetrics.volume1m += tradeVolumeUSD;
+      }
+      if (now - timestamp <= 5 * 60 * 1000) { // 5 minutes
+        currentMetrics.volume5m += tradeVolumeUSD;
+      }
+      if (now - timestamp <= 60 * 60 * 1000) { // 1 hour
+        currentMetrics.volume1h += tradeVolumeUSD;
+      }
+
       currentMetrics.price = usdPrice;
       currentMetrics.marketCap = marketCap;
 
@@ -297,13 +303,18 @@ export class TokenScanner {
     }
   }
 
+  private formatVolume(volume: number): string {
+    if (volume >= 1000) {
+      return `$${(volume / 1000).toFixed(2)}K`;
+    }
+    return `$${volume.toFixed(2)}`;
+  }
+
   private printMetrics(metrics: TokenMetrics) {
-    // Format price with scientific notation for very small numbers
     const formattedPrice = metrics.price < 0.00000001 ? 
       metrics.price.toExponential(8) : 
       metrics.price.toFixed(9);
 
-    // Format market cap with appropriate units (K, M, B)
     const formatMarketCap = (marketCap: number): string => {
       if (marketCap >= 1_000_000_000) {
         return `$${(marketCap / 1_000_000_000).toFixed(2)}B`;
@@ -318,7 +329,9 @@ export class TokenScanner {
     console.log(`
       Timestamp: ${new Date(metrics.timestamp).toISOString()}
       Price (USD): $${formattedPrice}
-      24h Volume: ${metrics.volume24h.toFixed(6)}
+      Volume 1m:  ${this.formatVolume(metrics.volume1m)}
+      Volume 5m:  ${this.formatVolume(metrics.volume5m)}
+      Volume 1h:  ${this.formatVolume(metrics.volume1h)}
       Market Cap: ${formatMarketCap(metrics.marketCap)}
     `);
   }
