@@ -287,10 +287,10 @@ export class TokenScanner {
 
       // Update volumes based on time windows (all in seconds)
       const timeDiff = now - timestamp;
-      if (timeDiff <= 60) { // 1 minute
+      if (timeDiff <= 60 * 1000) { // 1 minute
         currentMetrics.volume1m += volumeUSD;
       }
-      if (timeDiff <= 300) { // 5 minutes
+      if (timeDiff <= 5 * 60 * 1000) { // 5 minutes
         currentMetrics.volume5m += volumeUSD;
       }
       if (timeDiff <= 60 * 60 * 1000) { // 1 hour
