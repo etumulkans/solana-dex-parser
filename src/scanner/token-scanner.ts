@@ -279,7 +279,8 @@ export class TokenScanner {
         Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
       console.log("type:", trade.type, "tokenAmount:", tokenAmount, "solAmount:", solAmount);
-      const solPrice = isSell ? solAmount / tokenAmount : tokenAmount / solAmount;
+      
+      const solPrice =  solAmount / tokenAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
       if (usdPrice < 0.00000001) {
