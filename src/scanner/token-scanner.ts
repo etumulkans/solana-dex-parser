@@ -126,6 +126,13 @@ export class TokenScanner {
     if (!data.transaction?.transaction) return;
     
     try {
+      // Debug log to see full transaction data
+      console.log('Transaction data:', JSON.stringify({
+        meta: data.transaction.transaction.meta,
+        message: data.transaction.transaction.transaction?.message,
+        // Add any other relevant fields you want to inspect
+      }, null, 2));
+
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
       // Get raw keys and properly encode them to base58
@@ -199,7 +206,7 @@ export class TokenScanner {
         version: 'legacy'
       };
 
-      // Force Pumpswap parsing
+      // Force Pumpswap parsing with debug logging
       const parser = new DexParser();
       const trades = parser.parseTrades(txInfo as any, {
         programIds: [DEX_PROGRAMS.PUMP_SWAP.id],
@@ -207,7 +214,7 @@ export class TokenScanner {
       });
       
       if (trades.length > 0) {
-        console.log('Found trades:', trades);
+        console.log('Raw trade data:', JSON.stringify(trades, null, 2));
         this.processTrades(trades);
       }
     } catch (error) {
