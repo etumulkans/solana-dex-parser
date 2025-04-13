@@ -258,7 +258,8 @@ export class TokenScanner {
     if (!trades.length || (trades[0].type !== 'BUY' && trades[0].type !== 'SELL')) {
       return;
     }
-    console.log('Found trades:', trades);
+    //console.log('Found trades:', trades);
+
     for (const trade of trades) {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
@@ -277,6 +278,7 @@ export class TokenScanner {
         Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
         Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
+      console.log("type:", trade.type, "tokenAmount:", tokenAmount, "solAmount:", solAmount);
       const solPrice = isSell ? solAmount / tokenAmount : tokenAmount / solAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
