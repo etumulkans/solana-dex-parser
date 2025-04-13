@@ -104,7 +104,7 @@ export class DexParser {
 
     try {
       const adapter = new TransactionAdapter(tx, config);
-      console.log('Parsing transaction:', tx?.transaction?.signatures?.[0]);
+      //console.log('Parsing transaction:', tx?.transaction?.signatures?.[0]);
       const utils = new TransactionUtils(adapter);
       const classifier = new InstructionClassifier(adapter);
 
