@@ -385,14 +385,14 @@ export class TokenScanner {
       return `$${marketCap.toFixed(2)}`;
     };
 
-    console.log(`
-      Timestamp: ${new Date(metrics.timestamp).toISOString()}
-      Price (USD): $${formattedPrice}
-      Volume 1m:  ${this.formatVolume(metrics.volume1m)}
-      Volume 5m:  ${this.formatVolume(metrics.volume5m)}
-      Volume 1h:  ${this.formatVolume(metrics.volume1h)}
-      Market Cap: ${formatMarketCap(metrics.marketCap)}
-    `);
+    // console.log(`
+    //   Timestamp: ${new Date(metrics.timestamp).toISOString()}
+    //   Price (USD): $${formattedPrice}
+    //   Volume 1m:  ${this.formatVolume(metrics.volume1m)}
+    //   Volume 5m:  ${this.formatVolume(metrics.volume5m)}
+    //   Volume 1h:  ${this.formatVolume(metrics.volume1h)}
+    //   Market Cap: ${formatMarketCap(metrics.marketCap)}
+    // `);
   }
 }
 
