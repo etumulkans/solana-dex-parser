@@ -241,6 +241,8 @@ export class TokenScanner {
   private processTrades(trades: TradeInfo[]) {
     // Current SOL price in USD
     const SOL_PRICE_USD = 130;
+    // Total supply of tokens
+    const TOTAL_SUPPLY = 1_000_000_000;
 
     for (const trade of trades) {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
@@ -274,10 +276,13 @@ export class TokenScanner {
         usdPrice = Number(usdPrice.toExponential(8));
       }
 
+      // Calculate market cap
+      const marketCap = usdPrice * TOTAL_SUPPLY;
+
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
         price: usdPrice,
-        marketCap: 0,
+        marketCap: marketCap,
         volume24h: 0,
         timestamp,
       };
@@ -285,6 +290,7 @@ export class TokenScanner {
       // Update volume using the token amount
       currentMetrics.volume24h += tokenAmount;
       currentMetrics.price = usdPrice;
+      currentMetrics.marketCap = marketCap;
 
       this.metrics.set(timestamp, currentMetrics);
       this.printMetrics(currentMetrics);
@@ -297,11 +303,23 @@ export class TokenScanner {
       metrics.price.toExponential(8) : 
       metrics.price.toFixed(9);
 
+    // Format market cap with appropriate units (K, M, B)
+    const formatMarketCap = (marketCap: number): string => {
+      if (marketCap >= 1_000_000_000) {
+        return `$${(marketCap / 1_000_000_000).toFixed(2)}B`;
+      } else if (marketCap >= 1_000_000) {
+        return `$${(marketCap / 1_000_000).toFixed(2)}M`;
+      } else if (marketCap >= 1_000) {
+        return `$${(marketCap / 1_000).toFixed(2)}K`;
+      }
+      return `$${marketCap.toFixed(2)}`;
+    };
+
     console.log(`
       Timestamp: ${new Date(metrics.timestamp).toISOString()}
-      Price (USD): ${formattedPrice}
+      Price (USD): $${formattedPrice}
       24h Volume: ${metrics.volume24h.toFixed(6)}
-      Market Cap: ${metrics.marketCap > 0 ? metrics.marketCap.toFixed(2) : 'N/A'}
+      Market Cap: ${formatMarketCap(metrics.marketCap)}
     `);
   }
 }
