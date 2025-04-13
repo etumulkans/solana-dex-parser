@@ -248,17 +248,26 @@ export class TokenScanner {
       const timestamp = Math.floor(trade.timestamp / 1000) * 1000;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
-      // Get amounts and ensure proper decimal handling
-      const tokenAmount = isSell ? 
-        Number(trade.inputToken.amountRaw) / Math.pow(10, trade.inputToken.decimals) :
-        Number(trade.outputToken.amountRaw) / Math.pow(10, trade.outputToken.decimals);
-      
-      const solAmount = isSell ?
-        Number(trade.outputToken.amountRaw) / Math.pow(10, 9) : // SOL has 9 decimals
-        Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
+      // Get raw amounts
+      const tokenRawAmount = isSell ? trade.inputToken.amountRaw : trade.outputToken.amountRaw;
+      const solRawAmount = isSell ? trade.outputToken.amountRaw : trade.inputToken.amountRaw;
 
-      // Calculate price in SOL per token
-      const price = solAmount / tokenAmount;
+      // Convert to numbers, handling scientific notation
+      const tokenAmount = Number(tokenRawAmount) / Math.pow(10, isSell ? trade.inputToken.decimals : trade.outputToken.decimals);
+      const solAmount = Number(solRawAmount) / Math.pow(10, 9); // SOL decimals
+
+      // Calculate price - for small numbers, we need to handle precision carefully
+      let price: number;
+      if (isSell) {
+        price = solAmount / tokenAmount;
+      } else {
+        price = solAmount / tokenAmount;
+      }
+
+      // Ensure price is in the correct range (handling very small numbers)
+      if (price < 0.00000001) {
+        price = Number(price.toExponential(8));
+      }
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
@@ -278,9 +287,14 @@ export class TokenScanner {
   }
 
   private printMetrics(metrics: TokenMetrics) {
+    // Format price with scientific notation for very small numbers
+    const formattedPrice = metrics.price < 0.00000001 ? 
+      metrics.price.toExponential(8) : 
+      metrics.price.toFixed(9);
+
     console.log(`
       Timestamp: ${new Date(metrics.timestamp).toISOString()}
-      Price (SOL): ${metrics.price.toFixed(9)}
+      Price (SOL): ${formattedPrice}
       24h Volume: ${metrics.volume24h.toFixed(6)}
       Market Cap: ${metrics.marketCap > 0 ? metrics.marketCap.toFixed(2) : 'N/A'}
     `);
