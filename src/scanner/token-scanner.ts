@@ -239,8 +239,10 @@ export class TokenScanner {
   }
 
   private processTrades(trades: TradeInfo[]) {
+    // Current SOL price in USD
+    const SOL_PRICE_USD = 130;
+
     for (const trade of trades) {
-      // Only process trades involving our token
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
       }
@@ -252,26 +254,29 @@ export class TokenScanner {
       const tokenRawAmount = isSell ? trade.inputToken.amountRaw : trade.outputToken.amountRaw;
       const solRawAmount = isSell ? trade.outputToken.amountRaw : trade.inputToken.amountRaw;
 
-      // Convert to numbers, handling scientific notation
+      // Convert to numbers
       const tokenAmount = Number(tokenRawAmount) / Math.pow(10, isSell ? trade.inputToken.decimals : trade.outputToken.decimals);
       const solAmount = Number(solRawAmount) / Math.pow(10, 9); // SOL decimals
 
-      // Calculate price - for small numbers, we need to handle precision carefully
-      let price: number;
+      // Calculate price in SOL
+      let solPrice: number;
       if (isSell) {
-        price = solAmount / tokenAmount;
+        solPrice = solAmount / tokenAmount;
       } else {
-        price = solAmount / tokenAmount;
+        solPrice = solAmount / tokenAmount;
       }
 
-      // Ensure price is in the correct range (handling very small numbers)
-      if (price < 0.00000001) {
-        price = Number(price.toExponential(8));
+      // Convert SOL price to USD
+      let usdPrice = solPrice * SOL_PRICE_USD;
+
+      // Handle very small numbers
+      if (usdPrice < 0.00000001) {
+        usdPrice = Number(usdPrice.toExponential(8));
       }
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
-        price,
+        price: usdPrice,
         marketCap: 0,
         volume24h: 0,
         timestamp,
@@ -279,7 +284,7 @@ export class TokenScanner {
 
       // Update volume using the token amount
       currentMetrics.volume24h += tokenAmount;
-      currentMetrics.price = price;
+      currentMetrics.price = usdPrice;
 
       this.metrics.set(timestamp, currentMetrics);
       this.printMetrics(currentMetrics);
@@ -294,7 +299,7 @@ export class TokenScanner {
 
     console.log(`
       Timestamp: ${new Date(metrics.timestamp).toISOString()}
-      Price (SOL): ${formattedPrice}
+      Price (USD): ${formattedPrice}
       24h Volume: ${metrics.volume24h.toFixed(6)}
       Market Cap: ${metrics.marketCap > 0 ? metrics.marketCap.toFixed(2) : 'N/A'}
     `);
