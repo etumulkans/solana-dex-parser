@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 interface MarketData {
   timestamp: number;
   price: number;
@@ -12,6 +15,17 @@ interface TradingPosition {
   entryPrice: number;
   amount: number;
   timestamp: number;
+}
+
+interface TradeLog {
+  timestamp: number;
+  type: 'BUY' | 'SELL';
+  price: number;
+  amount: number;
+  total: number;
+  profitLoss?: number;
+  holdTime?: number;
+  dateTime?: string; // ISO string representation of the timestamp
 }
 
 export class TradingBot {
@@ -29,10 +43,45 @@ export class TradingBot {
     tokens: 0,
   };
 
+  private readonly logFile: string;
+
   constructor(
+    private readonly tokenId: string,
     private readonly maxPositionSize: number = 1000, // Maximum position size in USD
     private readonly priceDataWindow: number = 300 // 5 minutes of price data
-  ) {}
+  ) {
+    this.logFile = path.join(process.cwd(), `trades_${tokenId}.json`);
+    this.initializeLogFile();
+  }
+
+  private initializeLogFile(): void {
+    if (!fs.existsSync(this.logFile)) {
+      fs.writeFileSync(this.logFile, JSON.stringify([], null, 2));
+    }
+  }
+
+  private logTrade(trade: TradeLog): void {
+    try {
+      const trades = this.readTrades();
+      trades.push({
+        ...trade,
+        dateTime: new Date(trade.timestamp * 1000).toISOString(),
+      });
+      fs.writeFileSync(this.logFile, JSON.stringify(trades, null, 2));
+    } catch (error) {
+      console.error('Error logging trade:', error);
+    }
+  }
+
+  private readTrades(): TradeLog[] {
+    try {
+      const content = fs.readFileSync(this.logFile, 'utf-8');
+      return JSON.parse(content);
+    } catch (error) {
+      console.error('Error reading trades:', error);
+      return [];
+    }
+  }
 
   public updateMarketData(data: MarketData): void {
     this.marketData.push(data);
@@ -155,6 +204,15 @@ export class TradingBot {
     this.wallet.usd -= positionSize;
     this.wallet.tokens += tokenAmount;
 
+    // Log the trade
+    this.logTrade({
+      timestamp: currentData.timestamp,
+      type: 'BUY',
+      price: currentData.price,
+      amount: tokenAmount,
+      total: positionSize,
+    });
+
     console.log(`
       BUY EXECUTED
       Price: $${currentData.price}
@@ -169,9 +227,21 @@ export class TradingBot {
 
     const saleAmount = this.currentPosition.amount * currentData.price;
     const profitLoss = ((currentData.price - this.currentPosition.entryPrice) / this.currentPosition.entryPrice) * 100;
+    const holdTime = currentData.timestamp - this.currentPosition.timestamp;
 
     this.wallet.usd += saleAmount;
     this.wallet.tokens -= this.currentPosition.amount;
+
+    // Log the trade
+    this.logTrade({
+      timestamp: currentData.timestamp,
+      type: 'SELL',
+      price: currentData.price,
+      amount: this.currentPosition.amount,
+      total: saleAmount,
+      profitLoss: profitLoss,
+      holdTime: holdTime,
+    });
 
     console.log(`
       SELL EXECUTED
@@ -180,7 +250,7 @@ export class TradingBot {
       Amount: ${this.currentPosition.amount} tokens
       Total: $${saleAmount}
       Profit/Loss: ${profitLoss.toFixed(2)}%
-      Hold Time: ${currentData.timestamp - this.currentPosition.timestamp}s
+      Hold Time: ${holdTime}s
       Timestamp: ${new Date(currentData.timestamp * 1000).toISOString()}
     `);
 
@@ -193,6 +263,31 @@ export class TradingBot {
       USD: $${this.wallet.usd.toFixed(2)}
       Tokens: ${this.wallet.tokens}
       ${this.currentPosition ? `Current Position: ${this.currentPosition.amount} tokens @ $${this.currentPosition.entryPrice}` : 'No active position'}
+    `;
+  }
+
+  public getTradingStats(): string {
+    const trades = this.readTrades();
+    if (trades.length === 0) return 'No trades yet';
+
+    const profits = trades.filter((t) => t.type === 'SELL' && t.profitLoss !== undefined).map((t) => t.profitLoss!);
+
+    const totalTrades = trades.length;
+    const profitableTrades = profits.filter((p) => p > 0).length;
+    const averageProfit = profits.length > 0 ? profits.reduce((a, b) => a + b, 0) / profits.length : 0;
+    const maxProfit = Math.max(...profits, 0);
+    const maxLoss = Math.min(...profits, 0);
+
+    return `
+      Trading Stats for ${this.tokenId}:
+      Total Trades: ${totalTrades}
+      Profitable Trades: ${profitableTrades}
+      Win Rate: ${((profitableTrades / (trades.length / 2)) * 100).toFixed(2)}%
+      Average Profit/Loss: ${averageProfit.toFixed(2)}%
+      Max Profit: ${maxProfit.toFixed(2)}%
+      Max Loss: ${maxLoss.toFixed(2)}%
+      Current Balance: $${this.wallet.usd.toFixed(2)}
+      Current Tokens: ${this.wallet.tokens}
     `;
   }
 }
