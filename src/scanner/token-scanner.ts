@@ -22,6 +22,11 @@ export class TokenScanner {
   private parser: DexParser;
   private tokenAddress: string;
   private metrics: Map<number, TokenMetrics>;
+  private volumeWindows: {
+    oneMin: { timestamp: number; volume: number; }[];
+    fiveMin: { timestamp: number; volume: number; }[];
+    oneHour: { timestamp: number; volume: number; }[];
+  };
   private readonly ENDPOINT = 'http://grpc.solanavibestation.com:10000';
   private stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
 
@@ -30,6 +35,11 @@ export class TokenScanner {
     this.parser = new DexParser();
     this.metrics = new Map();
     this.client = new Client(this.ENDPOINT, undefined, {});
+    this.volumeWindows = {
+      oneMin: [],
+      fiveMin: [],
+      oneHour: []
+    };
   }
 
   private createSubscribeRequest(): SubscribeRequest {
@@ -243,14 +253,14 @@ export class TokenScanner {
   private processTrades(trades: TradeInfo[]) {
     const SOL_PRICE_USD = 130;
     const TOTAL_SUPPLY = 1_000_000_000;
-    const now = Math.floor(Date.now() / 1000); // Convert to seconds
+    const now = Math.floor(Date.now() / 1000);
 
     for (const trade of trades) {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
       }
 
-      const timestamp = Math.floor(trade.timestamp / 1000) * 1000;
+      const timestamp = trade.timestamp;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
       // Get token amount regardless of buy or sell
@@ -263,7 +273,7 @@ export class TokenScanner {
         Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
         Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
-      const solPrice = isSell ? solAmount / tokenAmount : solAmount / tokenAmount;
+      const solPrice = isSell ? solAmount / tokenAmount : tokenAmount / solAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
       if (usdPrice < 0.00000001) {
@@ -271,38 +281,53 @@ export class TokenScanner {
       }
 
       const marketCap = usdPrice * TOTAL_SUPPLY;
-
-      // Calculate volume in USD (token amount * price)
       const volumeUSD = tokenAmount * usdPrice;
 
+      // Clean up old volume entries
+      this.cleanupOldVolumes(now);
+
+      // Add new volume entry
+      this.volumeWindows.oneMin.push({ timestamp, volume: volumeUSD });
+      this.volumeWindows.fiveMin.push({ timestamp, volume: volumeUSD });
+      this.volumeWindows.oneHour.push({ timestamp, volume: volumeUSD });
+
+      // Calculate cumulative volumes
+      const volume1m = this.calculateWindowVolume(this.volumeWindows.oneMin, now, 60);
+      const volume5m = this.calculateWindowVolume(this.volumeWindows.fiveMin, now, 300);
+      const volume1h = this.calculateWindowVolume(this.volumeWindows.oneHour, now, 3600);
+
       // Update metrics
-      const currentMetrics = this.metrics.get(timestamp) || {
+      const currentMetrics: TokenMetrics = {
         price: usdPrice,
         marketCap: marketCap,
-        volume1m: 0,
-        volume5m: 0,
-        volume1h: 0,
-        timestamp,
+        volume1m: volume1m,
+        volume5m: volume5m,
+        volume1h: volume1h,
+        timestamp: timestamp
       };
-
-      // Update volumes based on time windows
-      const timeDiff = now - timestamp;
-      if (timeDiff <= 60 * 1000) { // 1 minute
-        currentMetrics.volume1m += volumeUSD;
-      }
-      if (timeDiff <= 5 * 60 * 1000) { // 5 minutes
-        currentMetrics.volume5m += volumeUSD;
-      }
-      if (timeDiff <= 60 * 60 * 1000) { // 1 hour
-        currentMetrics.volume1h += volumeUSD;
-      }
-
-      currentMetrics.price = usdPrice;
-      currentMetrics.marketCap = marketCap;
 
       this.metrics.set(timestamp, currentMetrics);
       this.printMetrics(currentMetrics);
     }
+  }
+
+  private cleanupOldVolumes(now: number) {
+    // Remove entries older than the window
+    this.volumeWindows.oneMin = this.volumeWindows.oneMin.filter(
+      entry => now - entry.timestamp <= 60
+    );
+    this.volumeWindows.fiveMin = this.volumeWindows.fiveMin.filter(
+      entry => now - entry.timestamp <= 300
+    );
+    this.volumeWindows.oneHour = this.volumeWindows.oneHour.filter(
+      entry => now - entry.timestamp <= 3600
+    );
+  }
+
+  private calculateWindowVolume(entries: { timestamp: number; volume: number; }[], now: number, windowSize: number): number {
+    return entries
+      .filter(entry => now - entry.timestamp <= windowSize)
+      .reduce((sum, entry) => sum + entry.volume, 0);
   }
 
   private formatVolume(volume: number): string {
