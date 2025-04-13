@@ -245,35 +245,31 @@ export class TokenScanner {
         continue;
       }
 
-      const timestamp = Math.floor(trade.timestamp / 1000) * 1000; // Round to nearest second
+      const timestamp = Math.floor(trade.timestamp / 1000) * 1000;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
-      // Calculate price in SOL - exclude fee amounts from calculation
-      let price: number;
-      if (isSell) {
-        // For sells: outputSOL/inputToken
-        price = Number(trade.outputToken.amount) / Number(trade.inputToken.amount);
-      } else {
-        // For buys: inputSOL/outputToken
-        price = Number(trade.inputToken.amount) / Number(trade.outputToken.amount);
-      }
+      // Get amounts and ensure proper decimal handling
+      const tokenAmount = isSell ? 
+        Number(trade.inputToken.amountRaw) / Math.pow(10, trade.inputToken.decimals) :
+        Number(trade.outputToken.amountRaw) / Math.pow(10, trade.outputToken.decimals);
+      
+      const solAmount = isSell ?
+        Number(trade.outputToken.amountRaw) / Math.pow(10, 9) : // SOL has 9 decimals
+        Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
+
+      // Calculate price in SOL per token
+      const price = solAmount / tokenAmount;
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
         price,
-        marketCap: 0, // Would need total supply for this
+        marketCap: 0,
         volume24h: 0,
         timestamp,
       };
 
-      // Update volume using the token amount (not SOL amount)
-      const volume = isSell ? 
-        Number(trade.inputToken.amount) : 
-        Number(trade.outputToken.amount);
-      
-      currentMetrics.volume24h += volume;
-
-      // Use the most recent price
+      // Update volume using the token amount
+      currentMetrics.volume24h += tokenAmount;
       currentMetrics.price = price;
 
       this.metrics.set(timestamp, currentMetrics);
