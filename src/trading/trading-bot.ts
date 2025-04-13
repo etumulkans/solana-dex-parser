@@ -31,15 +31,15 @@ interface TradeLog {
 
 export class TradingBot {
   // Volume-related thresholds
-  private readonly VOLUME_SPIKE_THRESHOLD = 1.5; // Reduced from 3.0 due to consistent volume
+  private readonly VOLUME_SPIKE_THRESHOLD = 3.0; // Reduced from 3.0 due to consistent volume
   private readonly MIN_VOLUME_USD = 500; // Reduced since we see active trading at lower volumes
   
   // Price movement thresholds
-  private readonly PRICE_CHANGE_THRESHOLD = 0.01; // 1% - More sensitive to smaller moves
-  private readonly REVERSAL_THRESHOLD = 0.008; // 0.8% - Quick to catch reversals
+  private readonly PRICE_CHANGE_THRESHOLD = 0.02; // 1% - More sensitive to smaller moves
+  private readonly REVERSAL_THRESHOLD = 0.01; // 0.8% - Quick to catch reversals
   
   // Risk management
-  private readonly PROFIT_TARGET = 0.05; // 5% - Faster profit taking
+  private readonly PROFIT_TARGET = 0.1; // 5% - Faster profit taking
   private readonly STOP_LOSS = 0.02; // 2% - Tighter stop loss
   private readonly MAX_HOLD_TIME = 30; // 30 seconds - Quick trades based on chart
   
