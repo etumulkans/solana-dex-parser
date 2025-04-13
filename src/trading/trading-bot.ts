@@ -125,7 +125,7 @@ export class TradingBot {
       return false;
     }
 
-    // Liquidity check (based on $29.97K liquidity)
+    // Liquidity check
     if (currentData.volume1m < this.MIN_VOLUME_USD) {
       return false;
     }
@@ -134,14 +134,15 @@ export class TradingBot {
     const priceMovement = this.detectPriceMovement(currentData);
     const buyPressure = this.calculateBuyPressure();
     const momentum = this.calculateMomentum();
+    const uptrend = this.isUptrend();
 
-    // Enhanced buy conditions
+    // Enhanced buy conditions with trend confirmation
     return (
+      (uptrend || buyPressure > this.MIN_BUY_PRESSURE) && // Buy if uptrend OR strong buy pressure
       volumeSpike &&
       priceMovement >= this.PRICE_CHANGE_THRESHOLD &&
-      buyPressure > this.MIN_BUY_PRESSURE &&
       momentum > 0 &&
-      !this.detectReversalPattern(currentData) // Avoid buying during reversals
+      !this.detectReversalPattern(currentData)
     );
   }
 
@@ -151,13 +152,15 @@ export class TradingBot {
     const profitLoss = (currentData.price - this.currentPosition.entryPrice) / 
                       this.currentPosition.entryPrice;
     const holdTime = currentData.timestamp - this.currentPosition.timestamp;
+    const uptrend = this.isUptrend();
 
-    // Enhanced sell conditions
+    // Enhanced sell conditions with trend consideration
     return (
       profitLoss <= -this.STOP_LOSS || // Stop loss
       profitLoss >= this.PROFIT_TARGET || // Take profit
       holdTime >= this.MAX_HOLD_TIME || // Max hold time
-      this.detectReversalPattern(currentData) // Sell on reversal pattern
+      (!uptrend && this.detectReversalPattern(currentData)) || // Sell on reversal if not in uptrend
+      (!uptrend && profitLoss > 0.02) // Take smaller profits in downtrend
     );
   }
 
@@ -230,12 +233,32 @@ export class TradingBot {
     if (this.marketData.length < this.TREND_WINDOW) return false;
 
     const recentPrices = this.marketData.slice(-this.TREND_WINDOW);
-    for (let i = 1; i < recentPrices.length; i++) {
+    
+    // Calculate EMA-based trend
+    const ema = this.calculateEMA(recentPrices.map(d => d.price), 3);
+    const currentPrice = recentPrices[recentPrices.length - 1].price;
+    
+    // Check if price is above EMA and making higher lows
+    let makingHigherLows = true;
+    for (let i = 2; i < recentPrices.length; i++) {
       if (recentPrices[i].price < recentPrices[i - 1].price) {
-        return false;
+        makingHigherLows = false;
+        break;
       }
     }
-    return true;
+
+    return currentPrice > ema && makingHigherLows;
+  }
+
+  private calculateEMA(prices: number[], period: number): number {
+    const multiplier = 2 / (period + 1);
+    let ema = prices[0];
+    
+    for (let i = 1; i < prices.length; i++) {
+      ema = (prices[i] - ema) * multiplier + ema;
+    }
+    
+    return ema;
   }
 
   private executeBuy(currentData: MarketData): void {
