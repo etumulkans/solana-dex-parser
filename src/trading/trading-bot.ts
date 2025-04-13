@@ -35,6 +35,7 @@ export class TradingBot {
   private readonly STOP_LOSS = 0.07; // 7% stop loss
   private readonly MAX_HOLD_TIME = 300; // 5 minutes max hold time
   private readonly MIN_VOLUME_USD = 1000; // Minimum volume in USD
+  private readonly FIXED_TOKEN_AMOUNT = 1000; // Always buy 1000 tokens
 
   private marketData: MarketData[] = [];
   private currentPosition: TradingPosition | null = null;
@@ -103,6 +104,15 @@ export class TradingBot {
 
   private shouldBuy(currentData: MarketData): boolean {
     if (this.marketData.length < 2) return false;
+
+    // Check if we have enough USD for the fixed token amount
+    const requiredUsd = this.FIXED_TOKEN_AMOUNT * currentData.price;
+    if (this.wallet.usd < requiredUsd) {
+      console.log(
+        `Insufficient USD balance for fixed token amount. Required: $${requiredUsd.toFixed(2)}, Available: $${this.wallet.usd.toFixed(2)}`
+      );
+      return false;
+    }
 
     // Calculate key metrics
     const volumeSpike = this.detectVolumeSpikePattern(currentData);
@@ -207,8 +217,8 @@ export class TradingBot {
   }
 
   private executeBuy(currentData: MarketData): void {
-    const positionSize = Math.min(this.maxPositionSize, this.wallet.usd);
-    const tokenAmount = positionSize / currentData.price;
+    const tokenAmount = this.FIXED_TOKEN_AMOUNT;
+    const positionSize = tokenAmount * currentData.price;
 
     this.currentPosition = {
       entryPrice: currentData.price,
@@ -230,9 +240,9 @@ export class TradingBot {
 
     console.log(`
       BUY EXECUTED
-      Price: $${currentData.price}
+      Price: $${currentData.price.toFixed(8)}
       Amount: ${tokenAmount} tokens
-      Total: $${positionSize}
+      Total: $${positionSize.toFixed(2)}
       Timestamp: ${new Date(currentData.timestamp * 1000).toISOString()}
     `);
   }
@@ -247,25 +257,25 @@ export class TradingBot {
     this.wallet.usd += saleAmount;
     this.wallet.tokens -= this.currentPosition.amount;
 
-    // Log the trade
+    // Log the trade with percentage gain/loss
     this.logTrade({
       timestamp: currentData.timestamp,
       type: 'SELL',
       price: currentData.price,
       amount: this.currentPosition.amount,
       total: saleAmount,
-      profitLoss: profitLoss,
+      profitLoss: profitLoss, // Now in percentage
       holdTime: holdTime,
     });
 
     console.log(`
       SELL EXECUTED
-      Entry Price: $${this.currentPosition.entryPrice}
-      Exit Price: $${currentData.price}
+      Entry Price: $${this.currentPosition.entryPrice.toFixed(8)}
+      Exit Price: $${currentData.price.toFixed(8)}
       Amount: ${this.currentPosition.amount} tokens
-      Total: $${saleAmount}
+      Total: $${saleAmount.toFixed(2)}
       Profit/Loss: ${profitLoss.toFixed(2)}%
-      Hold Time: ${holdTime}s
+      Hold Time: ${holdTime} seconds
       Timestamp: ${new Date(currentData.timestamp * 1000).toISOString()}
     `);
 
