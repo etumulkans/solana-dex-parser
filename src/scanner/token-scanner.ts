@@ -293,7 +293,7 @@ export class TokenScanner {
       if (timeDiff <= 300) { // 5 minutes
         currentMetrics.volume5m += volumeUSD;
       }
-      if (timeDiff <= 3600) { // 1 hour
+      if (timeDiff <= 60 * 60 * 1000) { // 1 hour
         currentMetrics.volume1h += volumeUSD;
       }
 
