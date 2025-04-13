@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -225,7 +226,7 @@ export class TradingBot {
     return volumes.reduce((a, b) => a + b, 0) / volumes.length;
   }
 
-  private isUptrend(currentData: MarketData): boolean {
+  private isUptrend(): boolean {
     if (this.marketData.length < this.TREND_WINDOW) return false;
 
     const recentPrices = this.marketData.slice(-this.TREND_WINDOW);
