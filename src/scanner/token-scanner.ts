@@ -52,7 +52,7 @@ export class TokenScanner {
       fiveMin: [],
       oneHour: []
     };
-    this.tradingBot = new TradingBot();
+    this.tradingBot = new TradingBot(tokenAddress);
   }
 
   private createSubscribeRequest(): SubscribeRequest {
