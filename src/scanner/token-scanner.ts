@@ -253,15 +253,16 @@ export class TokenScanner {
       const timestamp = Math.floor(trade.timestamp / 1000) * 1000;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
-      // Get raw amounts
-      const tokenRawAmount = isSell ? trade.inputToken.amountRaw : trade.outputToken.amountRaw;
-      const solRawAmount = isSell ? trade.outputToken.amountRaw : trade.inputToken.amountRaw;
+      // Get token amount regardless of buy or sell
+      const tokenAmount = isSell ? 
+        Number(trade.inputToken.amountRaw) / Math.pow(10, trade.inputToken.decimals) :
+        Number(trade.outputToken.amountRaw) / Math.pow(10, trade.outputToken.decimals);
 
-      // Convert to numbers
-      const tokenAmount = Number(tokenRawAmount) / Math.pow(10, isSell ? trade.inputToken.decimals : trade.outputToken.decimals);
-      const solAmount = Number(solRawAmount) / Math.pow(10, 9);
+      // Calculate USD price
+      const solAmount = isSell ?
+        Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
+        Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
-      // Calculate price in SOL and USD
       const solPrice = isSell ? solAmount / tokenAmount : solAmount / tokenAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
 
@@ -271,8 +272,8 @@ export class TokenScanner {
 
       const marketCap = usdPrice * TOTAL_SUPPLY;
 
-      // Calculate USD volume
-      const tradeVolumeUSD = tokenAmount * usdPrice;
+      // Calculate volume in USD (token amount * price)
+      const volumeUSD = tokenAmount * usdPrice;
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
@@ -285,14 +286,15 @@ export class TokenScanner {
       };
 
       // Update volumes based on time windows
-      if (now - timestamp <= 60 * 1000) { // 1 minute
-        currentMetrics.volume1m += tradeVolumeUSD;
+      const timeDiff = now - timestamp;
+      if (timeDiff <= 60 * 1000) { // 1 minute
+        currentMetrics.volume1m += volumeUSD;
       }
-      if (now - timestamp <= 5 * 60 * 1000) { // 5 minutes
-        currentMetrics.volume5m += tradeVolumeUSD;
+      if (timeDiff <= 5 * 60 * 1000) { // 5 minutes
+        currentMetrics.volume5m += volumeUSD;
       }
-      if (now - timestamp <= 60 * 60 * 1000) { // 1 hour
-        currentMetrics.volume1h += tradeVolumeUSD;
+      if (timeDiff <= 60 * 60 * 1000) { // 1 hour
+        currentMetrics.volume1h += volumeUSD;
       }
 
       currentMetrics.price = usdPrice;
