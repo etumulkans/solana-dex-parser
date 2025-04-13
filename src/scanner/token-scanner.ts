@@ -306,12 +306,6 @@ export class TokenScanner {
   }
 
   private formatVolume(volume: number): string {
-    if (volume >= 1_000_000_000) {
-      return `$${(volume / 1_000_000_000).toFixed(2)}B`;
-    }
-    if (volume >= 1_000_000) {
-      return `$${(volume / 1_000_000).toFixed(2)}M`;
-    }
     if (volume >= 1000) {
       return `$${(volume / 1000).toFixed(2)}K`;
     }
@@ -319,17 +313,9 @@ export class TokenScanner {
   }
 
   private printMetrics(metrics: TokenMetrics) {
-    // Format price with appropriate precision
-    let formattedPrice: string;
-    if (metrics.price >= 1) {
-      formattedPrice = `$${metrics.price.toFixed(2)}`;
-    } else if (metrics.price >= 0.01) {
-      formattedPrice = `$${metrics.price.toFixed(4)}`;
-    } else if (metrics.price >= 0.0001) {
-      formattedPrice = `$${metrics.price.toFixed(6)}`;
-    } else {
-      formattedPrice = `$${metrics.price.toExponential(4)}`;
-    }
+    const formattedPrice = metrics.price < 0.00000001 ? 
+      metrics.price.toExponential(8) : 
+      metrics.price.toFixed(9);
 
     const formatMarketCap = (marketCap: number): string => {
       if (marketCap >= 1_000_000_000) {
@@ -343,8 +329,8 @@ export class TokenScanner {
     };
 
     console.log(`
-      Timestamp: ${new Date(metrics.timestamp * 1000).toISOString()}
-      Price (USD): ${formattedPrice}
+      Timestamp: ${new Date(metrics.timestamp).toISOString()}
+      Price (USD): $${formattedPrice}
       Volume 1m:  ${this.formatVolume(metrics.volume1m)}
       Volume 5m:  ${this.formatVolume(metrics.volume5m)}
       Volume 1h:  ${this.formatVolume(metrics.volume1h)}
