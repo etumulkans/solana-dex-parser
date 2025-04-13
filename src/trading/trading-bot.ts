@@ -29,13 +29,17 @@ interface TradeLog {
 }
 
 export class TradingBot {
-  private readonly VOLUME_SPIKE_THRESHOLD = 2.0; // Volume spike multiplier
-  private readonly PRICE_CHANGE_THRESHOLD = 0.05; // 5% price change threshold
+  private readonly VOLUME_SPIKE_THRESHOLD = 3.0; // Increase from 2.0
+  private readonly PRICE_CHANGE_THRESHOLD = 0.02; // Reduce to 2% from 5%
   private readonly PROFIT_TARGET = 0.15; // 15% profit target
-  private readonly STOP_LOSS = 0.07; // 7% stop loss
-  private readonly MAX_HOLD_TIME = 300; // 5 minutes max hold time
-  private readonly MIN_VOLUME_USD = 1000; // Minimum volume in USD
+  private readonly STOP_LOSS = 0.03; // 3% stop loss
+  private readonly MAX_HOLD_TIME = 60; // Reduce to 60 seconds from 300
+  private readonly MIN_VOLUME_USD = 2000; // Increase from 1000
   private readonly FIXED_TOKEN_AMOUNT = 1000; // Always buy 1000 tokens
+  private readonly REVERSAL_THRESHOLD = 0.015; // Add new threshold for reversals
+  private readonly TRADE_COOLDOWN = 30; // 30 seconds cooldown between trades
+  private readonly TREND_WINDOW = 5; // Look at last 5 price points
+  private lastTradeTimestamp = 0;
 
   private marketData: MarketData[] = [];
   private currentPosition: TradingPosition | null = null;
@@ -105,6 +109,11 @@ export class TradingBot {
   private shouldBuy(currentData: MarketData): boolean {
     if (this.marketData.length < 2) return false;
 
+    // Add cooldown check
+    if (currentData.timestamp - this.lastTradeTimestamp < this.TRADE_COOLDOWN) {
+      return false;
+    }
+
     // Check if we have enough USD for the fixed token amount
     const requiredUsd = this.FIXED_TOKEN_AMOUNT * currentData.price;
     if (this.wallet.usd < requiredUsd) {
@@ -128,7 +137,7 @@ export class TradingBot {
     return (
       volumeSpike &&
       priceMovement >= this.PRICE_CHANGE_THRESHOLD && // Added threshold check
-      buyPressure > 0.6 &&
+      buyPressure > 0.7 && // Increase from 0.6
       momentum > 0 &&
       currentData.volume1m >= this.MIN_VOLUME_USD
     );
@@ -214,6 +223,18 @@ export class TradingBot {
     if (this.marketData.length === 0) return 0;
     const volumes = this.marketData.map((d) => d.volume1m);
     return volumes.reduce((a, b) => a + b, 0) / volumes.length;
+  }
+
+  private isUptrend(currentData: MarketData): boolean {
+    if (this.marketData.length < this.TREND_WINDOW) return false;
+
+    const recentPrices = this.marketData.slice(-this.TREND_WINDOW);
+    for (let i = 1; i < recentPrices.length; i++) {
+      if (recentPrices[i].price < recentPrices[i - 1].price) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private executeBuy(currentData: MarketData): void {
