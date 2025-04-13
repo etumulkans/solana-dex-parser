@@ -29,16 +29,26 @@ interface TradeLog {
 }
 
 export class TradingBot {
-  private readonly VOLUME_SPIKE_THRESHOLD = 3.0; // Increase from 2.0
-  private readonly PRICE_CHANGE_THRESHOLD = 0.02; // Reduce to 2% from 5%
-  private readonly PROFIT_TARGET = 0.15; // 15% profit target
-  private readonly STOP_LOSS = 0.03; // 3% stop loss
-  private readonly MAX_HOLD_TIME = 60; // Reduce to 60 seconds from 300
-  private readonly MIN_VOLUME_USD = 2000; // Increase from 1000
-  private readonly FIXED_TOKEN_AMOUNT = 1000; // Always buy 1000 tokens
-  private readonly REVERSAL_THRESHOLD = 0.015; // Add new threshold for reversals
-  private readonly TRADE_COOLDOWN = 30; // 30 seconds cooldown between trades
-  private readonly TREND_WINDOW = 5; // Look at last 5 price points
+  // Volume-related thresholds
+  private readonly VOLUME_SPIKE_THRESHOLD = 1.5; // Reduced from 3.0 due to consistent volume
+  private readonly MIN_VOLUME_USD = 500; // Reduced since we see active trading at lower volumes
+  
+  // Price movement thresholds
+  private readonly PRICE_CHANGE_THRESHOLD = 0.01; // 1% - More sensitive to smaller moves
+  private readonly REVERSAL_THRESHOLD = 0.008; // 0.8% - Quick to catch reversals
+  
+  // Risk management
+  private readonly PROFIT_TARGET = 0.05; // 5% - Faster profit taking
+  private readonly STOP_LOSS = 0.02; // 2% - Tighter stop loss
+  private readonly MAX_HOLD_TIME = 30; // 30 seconds - Quick trades based on chart
+  
+  // Trade execution
+  private readonly TRADE_COOLDOWN = 15; // 15 seconds between trades
+  private readonly FIXED_TOKEN_AMOUNT = 1000;
+  private readonly TREND_WINDOW = 3; // Shorter trend window due to volatility
+  
+  // Buy pressure threshold
+  private readonly MIN_BUY_PRESSURE = 0.65; // Based on buyer/seller ratio (242/255)
   private lastTradeTimestamp = 0;
 
   private marketData: MarketData[] = [];
@@ -108,57 +118,45 @@ export class TradingBot {
 
   private shouldBuy(currentData: MarketData): boolean {
     if (this.marketData.length < 2) return false;
-
-    // Add cooldown check
+    
+    // Cooldown check
     if (currentData.timestamp - this.lastTradeTimestamp < this.TRADE_COOLDOWN) {
       return false;
     }
 
-    // Check if we have enough USD for the fixed token amount
-    const requiredUsd = this.FIXED_TOKEN_AMOUNT * currentData.price;
-    if (this.wallet.usd < requiredUsd) {
-      console.log(
-        `Insufficient USD balance for fixed token amount. Required: $${requiredUsd.toFixed(2)}, Available: $${this.wallet.usd.toFixed(2)}`
-      );
+    // Liquidity check (based on $29.97K liquidity)
+    if (currentData.volume1m < this.MIN_VOLUME_USD) {
       return false;
     }
 
-    // Calculate key metrics
     const volumeSpike = this.detectVolumeSpikePattern(currentData);
     const priceMovement = this.detectPriceMovement(currentData);
     const buyPressure = this.calculateBuyPressure();
     const momentum = this.calculateMomentum();
 
-    // Buy conditions:
-    // 1. Volume spike detected
-    // 2. Significant positive price movement (> PRICE_CHANGE_THRESHOLD)
-    // 3. Strong buy pressure
-    // 4. Positive momentum
+    // Enhanced buy conditions
     return (
       volumeSpike &&
-      priceMovement >= this.PRICE_CHANGE_THRESHOLD && // Added threshold check
-      buyPressure > 0.7 && // Increase from 0.6
+      priceMovement >= this.PRICE_CHANGE_THRESHOLD &&
+      buyPressure > this.MIN_BUY_PRESSURE &&
       momentum > 0 &&
-      currentData.volume1m >= this.MIN_VOLUME_USD
+      !this.detectReversalPattern(currentData) // Avoid buying during reversals
     );
   }
 
   private shouldSell(currentData: MarketData): boolean {
     if (!this.currentPosition) return false;
 
-    const profitLoss = (currentData.price - this.currentPosition.entryPrice) / this.currentPosition.entryPrice;
-    const holdingTime = currentData.timestamp - this.currentPosition.timestamp;
+    const profitLoss = (currentData.price - this.currentPosition.entryPrice) / 
+                      this.currentPosition.entryPrice;
+    const holdTime = currentData.timestamp - this.currentPosition.timestamp;
 
-    // Sell conditions:
-    // 1. Profit target reached
-    // 2. Stop loss hit
-    // 3. Maximum holding time exceeded
-    // 4. Reversal pattern detected
+    // Enhanced sell conditions
     return (
-      profitLoss >= this.PROFIT_TARGET ||
-      profitLoss <= -this.STOP_LOSS ||
-      holdingTime >= this.MAX_HOLD_TIME ||
-      this.detectReversalPattern(currentData)
+      profitLoss <= -this.STOP_LOSS || // Stop loss
+      profitLoss >= this.PROFIT_TARGET || // Take profit
+      holdTime >= this.MAX_HOLD_TIME || // Max hold time
+      this.detectReversalPattern(currentData) // Sell on reversal pattern
     );
   }
 
@@ -184,7 +182,9 @@ export class TradingBot {
 
   private calculateBuyPressure(): number {
     const recentTrades = this.marketData.slice(-10);
-    const buyCount = recentTrades.filter((d) => d.tradeType === 'BUY').length;
+    if (recentTrades.length === 0) return 0;
+
+    const buyCount = recentTrades.filter(d => d.tradeType === 'BUY').length;
     return buyCount / recentTrades.length;
   }
 

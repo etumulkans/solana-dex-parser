@@ -222,7 +222,7 @@ export class TokenScanner {
           ]
         },
         version: 'legacy'
-      };
+      }; 
 
       // Force Pumpswap parsing
       const parser = new DexParser();
