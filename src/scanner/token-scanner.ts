@@ -248,28 +248,33 @@ export class TokenScanner {
       const timestamp = Math.floor(trade.timestamp / 1000) * 1000; // Round to nearest second
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
-      // Calculate price in SOL
+      // Calculate price in SOL - exclude fee amounts from calculation
       let price: number;
       if (isSell) {
-        price = trade.outputToken.amount / trade.inputToken.amount;
+        // For sells: outputSOL/inputToken
+        price = Number(trade.outputToken.amount) / Number(trade.inputToken.amount);
       } else {
-        price = trade.inputToken.amount / trade.outputToken.amount;
+        // For buys: inputSOL/outputToken
+        price = Number(trade.inputToken.amount) / Number(trade.outputToken.amount);
       }
 
       // Update metrics
       const currentMetrics = this.metrics.get(timestamp) || {
         price,
-        marketCap: 0, // Need total supply for this
+        marketCap: 0, // Would need total supply for this
         volume24h: 0,
         timestamp,
       };
 
-      // Update volume
-      const volume = isSell ? trade.inputToken.amount : trade.outputToken.amount;
+      // Update volume using the token amount (not SOL amount)
+      const volume = isSell ? 
+        Number(trade.inputToken.amount) : 
+        Number(trade.outputToken.amount);
+      
       currentMetrics.volume24h += volume;
 
-      // Update price as weighted average
-      currentMetrics.price = (currentMetrics.price + price) / 2;
+      // Use the most recent price
+      currentMetrics.price = price;
 
       this.metrics.set(timestamp, currentMetrics);
       this.printMetrics(currentMetrics);
@@ -279,9 +284,9 @@ export class TokenScanner {
   private printMetrics(metrics: TokenMetrics) {
     console.log(`
       Timestamp: ${new Date(metrics.timestamp).toISOString()}
-      Price (SOL): ${metrics.price.toFixed(6)}
-      24h Volume: ${metrics.volume24h.toFixed(2)}
-      Market Cap: ${metrics.marketCap.toFixed(2)}
+      Price (SOL): ${metrics.price.toFixed(9)}
+      24h Volume: ${metrics.volume24h.toFixed(6)}
+      Market Cap: ${metrics.marketCap > 0 ? metrics.marketCap.toFixed(2) : 'N/A'}
     `);
   }
 }
