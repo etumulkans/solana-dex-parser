@@ -7,6 +7,7 @@ import { TradeInfo } from '../types';
 import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js';
 import base58 from 'bs58';
 import { DEX_PROGRAMS } from '../constants';
+import { TradingBot } from '../trading/trading-bot';
 
 interface TokenMetrics {
   price: number;
@@ -15,6 +16,16 @@ interface TokenMetrics {
   volume5m: number;
   volume1h: number;
   timestamp: number;
+}
+
+interface MarketData {
+  timestamp: number;
+  price: number;
+  volume1m: number;
+  volume5m: number;
+  marketCap: number;
+  tradeAmount: number;
+  tradeType: 'BUY' | 'SELL';
 }
 
 export class TokenScanner {
@@ -29,6 +40,7 @@ export class TokenScanner {
   };
   private readonly ENDPOINT = 'http://grpc.solanavibestation.com:10000';
   private stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
+  private tradingBot: TradingBot;
 
   constructor(tokenAddress: string) {
     this.tokenAddress = tokenAddress;
@@ -40,6 +52,7 @@ export class TokenScanner {
       fiveMin: [],
       oneHour: []
     };
+    this.tradingBot = new TradingBot();
   }
 
   private createSubscribeRequest(): SubscribeRequest {
@@ -315,6 +328,18 @@ export class TokenScanner {
 
       this.metrics.set(timestamp, currentMetrics);
       this.printMetrics(currentMetrics);
+
+      const marketData: MarketData = {
+        timestamp: timestamp,
+        price: usdPrice,
+        volume1m: volume1m,
+        volume5m: volume5m,
+        marketCap: marketCap,
+        tradeAmount: tokenAmount,
+        tradeType: trade.type
+      };
+
+      this.tradingBot.updateMarketData(marketData);
     }
   }
 
