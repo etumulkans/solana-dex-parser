@@ -32,6 +32,7 @@ export class TokenScanner {
   private client: Client;
   private parser: DexParser;
   private tokenAddress: string;
+  private scanAddress:string;
   private metrics: Map<number, TokenMetrics>;
   private volumeWindows: {
     oneMin: { timestamp: number; volume: number; }[];
@@ -42,8 +43,9 @@ export class TokenScanner {
   private stream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
   private tradingBot: TradingBot;
 
-  constructor(tokenAddress: string) {
+  constructor(tokenAddress: string,scanAddress: string) {
     this.tokenAddress = tokenAddress;
+    this.scanAddress = scanAddress;
     this.parser = new DexParser();
     this.metrics = new Map();
     this.client = new Client(this.ENDPOINT, undefined, {});
@@ -61,7 +63,7 @@ export class TokenScanner {
       slots: {},
       transactions: {
         tokenAccount: {
-          accountInclude: [this.tokenAddress],
+          accountInclude: [this.scanAddress],
           accountExclude: [],
           accountRequired: [],
         },
