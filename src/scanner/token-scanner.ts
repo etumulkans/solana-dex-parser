@@ -150,15 +150,25 @@ export class TokenScanner {
   }
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
-    
-
     if (!data.transaction?.transaction) return;
     
-   
     try {
-      
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
-      // Get raw keys and properly encode them to base58
+      const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
+      
+      const hasCreateAccountWithSeed = instructions.some(instruction => {
+        if (!instruction.data) return false;
+        const instructionData = Buffer.from(instruction.data);
+        const programId = accountKeys[instruction.programIdIndex];
+        return programId === SYSTEM_PROGRAM_ID && instructionData[0] === 3;
+      });
+
+      if (hasCreateAccountWithSeed) {
+        console.log('Found createAccountWithSeed transaction');
+        // Handle the createAccountWithSeed transaction here
+        return;
+      }
+
       const rawKeys = data.transaction?.transaction?.transaction?.message?.accountKeys || [];
       const accountKeys = rawKeys.map(key => {
         if (Buffer.isBuffer(key)) {
@@ -236,6 +246,8 @@ export class TokenScanner {
       //   tryUnknowDEX: false
       // });
       //console.log("trades:", txInfo);
+
+      
 
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
