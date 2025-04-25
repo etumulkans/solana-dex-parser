@@ -153,7 +153,7 @@ export async function parseTransactionDetails(signature: string): Promise<SwapDe
 // Example usage:
 async function example() {
   // Jupiter swap example
-  const jupiterSwap = '2CYBHseAoZy1WHTNnVj1cTV9gnDeXE5WHAq6xXP62RL6h54uN1ft1AM1r5VkhMXYtav54CaP4nbR2rDe5TZdPzbR';
+  const jupiterSwap = '298EN3Eag7svjLWq62bMfaz6rL3QzE2VsZ9R2uGjfQ416umTWNaeEyBtjBDhEGTyzxzDQrzfDiA3kf3YV1S9Adnz';
 
   console.log('Parsing transaction...');
   const details = await parseTransactionDetails(jupiterSwap);
