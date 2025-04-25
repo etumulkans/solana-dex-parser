@@ -239,8 +239,8 @@ export class TokenScanner {
         tryUnknowDEX: true
       });
 
-      console.log(trades);
       
+
       if (trades.length > 0) {
         
         this.processTrades(trades);
@@ -287,7 +287,7 @@ export class TokenScanner {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
       }
-
+      console.log(trades);
       const timestamp = trade.timestamp;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
