@@ -231,6 +231,7 @@ export class TokenScanner {
       //   tryUnknowDEX: false
       // });
 
+      console.log(txInfo);
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
       });
