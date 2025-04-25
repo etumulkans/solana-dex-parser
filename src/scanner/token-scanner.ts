@@ -150,8 +150,9 @@ export class TokenScanner {
   private async handleData(data: SubscribeUpdate): Promise<void> {
     if (!data.transaction?.transaction) return;
     
+    console.log(data);
     try {
-      console.log(data);
+      
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
       // Get raw keys and properly encode them to base58
