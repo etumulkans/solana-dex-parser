@@ -163,7 +163,7 @@ export class TokenScanner {
       });
       
       if (hasCreateAccountWithSeed) {
-        console.log('Found createAccountWithSeed transaction');
+       // console.log('Found createAccountWithSeed transaction');
         // Handle the createAccountWithSeed transaction here
         return;
       }
