@@ -239,6 +239,7 @@ export class TokenScanner {
         tryUnknowDEX: true
       });
 
+      console.log(trades);
       
       if (trades.length > 0) {
         
