@@ -149,7 +149,7 @@ export class TokenScanner {
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
     console.log(data);
-    return;
+
     if (!data.transaction?.transaction) return;
     
     
