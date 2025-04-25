@@ -155,12 +155,7 @@ export class TokenScanner {
     try {
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
 
-      const hasCreateAccountWithSeed = instructions.some(instruction => {
-        if (!instruction.data) return false;
-        const instructionData = Buffer.from(instruction.data);
-        // 3 is the instruction index for createAccountWithSeed in System Program
-        return instructionData[0] === 3;
-      });
+      const hasCreateAccountWithSeed = instructions.length > 0 && instructions[0].data && Buffer.from(instructions[0].data)[0] === 3;
       
       if (hasCreateAccountWithSeed) {
        // console.log('Found createAccountWithSeed transaction');
