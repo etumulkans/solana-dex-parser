@@ -233,7 +233,7 @@ export class TokenScanner {
       //   programIds: [DEX_PROGRAMS.PUMP_SWAP.id],
       //   tryUnknowDEX: false
       // });
-      console.log("trades:", txInfo);
+      //console.log("trades:", txInfo);
 
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
