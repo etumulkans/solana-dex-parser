@@ -151,6 +151,7 @@ export class TokenScanner {
     if (!data.transaction?.transaction) return;
     
     try {
+      console.log(data);
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
       
       // Get raw keys and properly encode them to base58
@@ -231,7 +232,7 @@ export class TokenScanner {
       //   tryUnknowDEX: false
       // });
 
-      console.log(txInfo);
+
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
       });
