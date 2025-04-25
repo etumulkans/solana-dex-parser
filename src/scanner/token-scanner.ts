@@ -148,9 +148,11 @@ export class TokenScanner {
   }
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
+    console.log(data);
+    return;
     if (!data.transaction?.transaction) return;
     
-    console.log(data);
+    
     try {
       
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
