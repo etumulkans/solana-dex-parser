@@ -226,10 +226,15 @@ export class TokenScanner {
 
       // Force Pumpswap parsing
       const parser = new DexParser();
+      // const trades = parser.parseTrades(txInfo as any, {
+      //   programIds: [DEX_PROGRAMS.PUMP_SWAP.id],
+      //   tryUnknowDEX: false
+      // });
+
       const trades = parser.parseTrades(txInfo as any, {
-        programIds: [DEX_PROGRAMS.PUMP_SWAP.id],
-        tryUnknowDEX: false
+        tryUnknowDEX: true
       });
+
       
       if (trades.length > 0) {
         
