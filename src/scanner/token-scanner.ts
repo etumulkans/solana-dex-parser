@@ -289,7 +289,7 @@ export class TokenScanner {
       if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
         continue;
       }
-      console.log(trades);
+      //console.log(trades);
       const timestamp = trade.timestamp;
       const isSell = trade.inputToken.mint === this.tokenAddress;
 
