@@ -1,7 +1,7 @@
 import { TokenScanner } from '../scanner/token-scanner';
 
 async function main() {
-  const TOKEN_ADDRESS = 'BJeNg3VeDvjjMUX8NJr2God74JMh2ViZk1VHR65UA5at';
+  const TOKEN_ADDRESS = '764UjMgKymghJo3Ndz66pGSqhFAdd6qQE7VeYRympump';
   const scanner = new TokenScanner(TOKEN_ADDRESS);
   await scanner.startScanning();
 }
