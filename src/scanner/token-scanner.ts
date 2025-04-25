@@ -285,7 +285,7 @@ export class TokenScanner {
     const SOL_PRICE_USD = 130;
     const TOTAL_SUPPLY = 1_000_000_000;
     const now = Math.floor(Date.now() / 1000);
-
+    const sig = trades[0].signature;
     if (!trades.length || (trades[0].type !== 'BUY' && trades[0].type !== 'SELL')) {
       return;
     }
@@ -309,7 +309,7 @@ export class TokenScanner {
         Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
         Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
 
-      console.log("type:", trade.type, "tokenAmount:", tokenAmount, "solAmount:", solAmount);
+      console.log("type:", trade.type, "tokenAmount:", tokenAmount, "solAmount:", solAmount,"sig:", sig);
       
       const solPrice =  solAmount / tokenAmount;
       let usdPrice = solPrice * SOL_PRICE_USD;
