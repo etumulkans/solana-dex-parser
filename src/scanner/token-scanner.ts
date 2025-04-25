@@ -152,11 +152,11 @@ export class TokenScanner {
 
     if (!data.transaction?.transaction) return;
     
-    console.log(data);
+   
     try {
       
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
-      
+      console.log(instructions);
       // Get raw keys and properly encode them to base58
       const rawKeys = data.transaction?.transaction?.transaction?.message?.accountKeys || [];
       const accountKeys = rawKeys.map(key => {
