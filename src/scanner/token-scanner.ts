@@ -153,6 +153,8 @@ export class TokenScanner {
     if (!data.transaction?.transaction) return;
     
     try {
+      const sig = data.transaction.transaction.signature;
+      console.log(sig);
       const instructions = data.transaction.transaction?.transaction?.message?.instructions || [];
 
       const hasCreateAccountWithSeed = instructions.length > 0 && instructions[0].data && Buffer.from(instructions[0].data)[0] === 3;
