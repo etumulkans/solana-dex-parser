@@ -2,8 +2,8 @@
 /* eslint-disable prettier/prettier */
 import Client, { CommitmentLevel, SubscribeRequest, SubscribeUpdate } from '@triton-one/yellowstone-grpc';
 import { ClientDuplexStream } from '@grpc/grpc-js';
-import { DexParser } from '../dex-parser';
-import { TradeInfo } from '../types';
+import { DexParser  } from '../dex-parser';
+import { TradeInfo , PoolEvent } from '../types';
 import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js';
 import base58 from 'bs58';
 import { DEX_PROGRAMS } from '../constants';
@@ -230,12 +230,14 @@ export class TokenScanner {
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
       });
-
+      const liquidity = parser.parseLiquidity(txInfo as any, {
+        tryUnknowDEX: true
+      });
       
 
       if (trades.length > 0) {
         
-        this.processTrades(trades);
+        this.processTrades(trades,liquidity);
       }
     } catch (error) {
       console.error('Error processing transaction:', error);
@@ -254,11 +256,14 @@ export class TokenScanner {
     }
   }
 
-  private processTrades(trades: TradeInfo[]) {
+  private processTrades(trades: TradeInfo[],liquidity: PoolEvent[]) {
     const SOL_PRICE_USD = 170;
     const TOTAL_SUPPLY = 1_000_000_000;
     const now = Math.floor(Date.now() / 1000);
     const sig = trades[0].signature;
+    if (liquidity.length > 0) {
+      console.log('Found liquidity events:', liquidity);
+    }
     console.log('Trade timestamp:', trades[0].timestamp, 'Current timestamp:', now, 'Difference (s):', now - trades[0].timestamp);
     return;
     
