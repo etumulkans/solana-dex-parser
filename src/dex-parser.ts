@@ -157,10 +157,10 @@ export class DexParser {
         if (parseType === 'liquidity' || parseType === 'all') {
           if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
           if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
-          console.log(parseType);
           const LiquidityParserClass = this.parseLiquidityMap[programId];
           if (LiquidityParserClass) {
             const parser = new LiquidityParserClass(adapter, transferActions, classifiedInstructions);
+            console.log('Found liquidity events:', parser.processLiquidity());
             result.liquidities.push(...parser.processLiquidity());
           }
         }
