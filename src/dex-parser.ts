@@ -107,10 +107,10 @@ export class DexParser {
       //console.log('Parsing transaction:', tx?.transaction?.signatures?.[0]);
       const utils = new TransactionUtils(adapter);
       const classifier = new InstructionClassifier(adapter);
-      console.log('test');
       // Get DEX information and validate
       const dexInfo = utils.getDexInfo(classifier);
       const allProgramIds = classifier.getAllProgramIds();
+      console.log(allProgramIds);
       const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
 
       // Try specific parser first
