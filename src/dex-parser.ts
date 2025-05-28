@@ -110,9 +110,8 @@ export class DexParser {
       // Get DEX information and validate
       const dexInfo = utils.getDexInfo(classifier);
       const allProgramIds = classifier.getAllProgramIds();
-      console.log(allProgramIds);
       const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
-
+      console.log(transferActions);
       // Try specific parser first
       if (dexInfo.programId && [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
         if (parseType === 'trades' || parseType === 'all') {
