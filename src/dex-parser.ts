@@ -164,9 +164,13 @@ export class DexParser {
           }
         }
       }
+
+      if (result.liquidities.length > 0) {
+        console.log('Found liquidity events:', result.liquidities);
+      }
+
       // Deduplicate trades
       if (result.trades.length > 0) {
-        console.log('Found liquidity events:', result.trades);
         result.trades = [...new Map(result.trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()];
       }
 
