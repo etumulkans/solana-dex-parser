@@ -284,7 +284,7 @@ export class TokenScanner {
   }
 
   private processTrades(trades: TradeInfo[]) {
-    const SOL_PRICE_USD = 130;
+    const SOL_PRICE_USD = 170;
     const TOTAL_SUPPLY = 1_000_000_000;
     const now = Math.floor(Date.now() / 1000);
     const sig = trades[0].signature;
