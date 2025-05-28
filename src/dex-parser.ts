@@ -111,7 +111,6 @@ export class DexParser {
       const dexInfo = utils.getDexInfo(classifier);
       const allProgramIds = classifier.getAllProgramIds();
       const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
-      console.log(transferActions);
       // Try specific parser first
       if (dexInfo.programId && [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
         if (parseType === 'trades' || parseType === 'all') {
@@ -158,7 +157,7 @@ export class DexParser {
         if (parseType === 'liquidity' || parseType === 'all') {
           if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
           if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
-
+          console.log(parseType);
           const LiquidityParserClass = this.parseLiquidityMap[programId];
           if (LiquidityParserClass) {
             const parser = new LiquidityParserClass(adapter, transferActions, classifiedInstructions);
