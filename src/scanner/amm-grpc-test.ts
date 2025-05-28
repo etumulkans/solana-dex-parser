@@ -16,7 +16,7 @@ export class TokenScanner {
   private parser: DexParser;
   private tokenAddress: string;
   private scanAddress:string;
-  private metrics: Map<number, TokenMetrics>;
+
   private volumeWindows: {
     oneMin: { timestamp: number; volume: number; }[];
     fiveMin: { timestamp: number; volume: number; }[];
@@ -30,7 +30,6 @@ export class TokenScanner {
     this.tokenAddress = tokenAddress;
     this.scanAddress = scanAddress;
     this.parser = new DexParser();
-    this.metrics = new Map();
     this.client = new Client(this.ENDPOINT, undefined, {});
     this.volumeWindows = {
       oneMin: [],
@@ -262,79 +261,10 @@ export class TokenScanner {
     const sig = trades[0].signature;
     console.log('Trade timestamp:', trades[0].timestamp, 'Current timestamp:', now, 'Difference (s):', now - trades[0].timestamp);
     return;
-    if (!trades.length || (trades[0].type !== 'BUY' && trades[0].type !== 'SELL')) {
-      return;
-    }
-    //console.log('Found trades:', trades);
+    
 
-    for (const trade of trades) {
-      if (trade.inputToken.mint !== this.tokenAddress && trade.outputToken.mint !== this.tokenAddress) {
-        continue;
-      }
-      //console.log(trades);
-      const timestamp = trade.timestamp;
-      const isSell = trade.inputToken.mint === this.tokenAddress;
-
-      // Get token amount regardless of buy or sell
-      const tokenAmount = isSell ? 
-        Number(trade.inputToken.amountRaw) / Math.pow(10, trade.inputToken.decimals) :
-        Number(trade.outputToken.amountRaw) / Math.pow(10, trade.outputToken.decimals);
-
-      // Calculate USD price
-      const solAmount = isSell ?
-        Number(trade.outputToken.amountRaw) / Math.pow(10, 9) :
-        Number(trade.inputToken.amountRaw) / Math.pow(10, 9);
-
-      console.log("type:", trade.type, "tokenAmount:", tokenAmount, "solAmount:", solAmount,"sig:", sig);
-      
-      const solPrice =  solAmount / tokenAmount;
-      let usdPrice = solPrice * SOL_PRICE_USD;
-
-      if (usdPrice < 0.00000001) {
-        usdPrice = Number(usdPrice.toExponential(8));
-      }
-
-      const marketCap = usdPrice * TOTAL_SUPPLY;
-      const volumeUSD = tokenAmount * usdPrice;
-
-      // Clean up old volume entries
-      this.cleanupOldVolumes(now);
-
-      // Add new volume entry
-      this.volumeWindows.oneMin.push({ timestamp, volume: volumeUSD });
-      this.volumeWindows.fiveMin.push({ timestamp, volume: volumeUSD });
-      this.volumeWindows.oneHour.push({ timestamp, volume: volumeUSD });
-
-      // Calculate cumulative volumes
-      const volume1m = this.calculateWindowVolume(this.volumeWindows.oneMin, now, 60);
-      const volume5m = this.calculateWindowVolume(this.volumeWindows.fiveMin, now, 300);
-      const volume1h = this.calculateWindowVolume(this.volumeWindows.oneHour, now, 3600);
-
-      // Update metrics
-      const currentMetrics: TokenMetrics = {
-        price: usdPrice,
-        marketCap: marketCap,
-        volume1m: volume1m,
-        volume5m: volume5m,
-        volume1h: volume1h,
-        timestamp: timestamp
-      };
-
-      this.metrics.set(timestamp, currentMetrics);
-      this.printMetrics(currentMetrics);
-
-      const marketData: MarketData = {
-        timestamp: timestamp,
-        price: usdPrice,
-        volume1m: volume1m,
-        volume5m: volume5m,
-        marketCap: marketCap,
-        tradeAmount: tokenAmount,
-        tradeType: trade.type
-      };
-
-      this.tradingBot.updateMarketData(marketData);
-    }
+   
+    
   }
 
 }
