@@ -226,19 +226,23 @@ export class TokenScanner {
       //console.log("trades:", txInfo);
 
       
-
+      try {
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
       });
       const liquidity = parser.parseLiquidity(txInfo as any, {
         tryUnknowDEX: true
       });
-      
+
 
       if (trades.length > 0) {
         
         this.processTrades(trades,liquidity);
       }
+    } catch (error) {
+      //console.error('Error parsing transaction:', error);
+      return;
+    }
     } catch (error) {
       console.error('Error processing transaction:', error);
     }
