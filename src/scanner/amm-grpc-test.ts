@@ -243,7 +243,9 @@ export class TokenScanner {
       }
       if (liquidity.length > 0) {
         console.log('Found liquidity events:', liquidity);
-        logger.info(liquidity, "liquidity.log");
+        const mint= liquidity[0].token0Mint == 'So11111111111111111111111111111111111111112' ? liquidity[0].token1Mint : liquidity[0].token0Mint;
+        const solAmount = liquidity[0].token0Mint == 'So11111111111111111111111111111111111111112' ? liquidity[0].token0Amount : liquidity[0].token1Amount;
+        logger.info(`https://neo.bullx.io/terminal?chainId=1399811149&address=${mint} sol:${solAmount}`, "liquidity.log");
       }
     } catch (error) {
       //console.error('Error parsing transaction:', error);
