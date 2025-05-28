@@ -264,7 +264,7 @@ export class TokenScanner {
     if (liquidity.length > 0) {
       console.log('Found liquidity events:', liquidity);
     }
-    console.log('Trade timestamp:', trades[0].timestamp, 'Current timestamp:', now, 'Difference (s):', now - trades[0].timestamp);
+    //console.log('Trade timestamp:', trades[0].timestamp, 'Current timestamp:', now, 'Difference (s):', now - trades[0].timestamp);
     return;
     
 
