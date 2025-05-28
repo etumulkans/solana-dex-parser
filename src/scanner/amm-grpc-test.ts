@@ -8,7 +8,7 @@ import { VersionedMessage, VersionedTransactionResponse } from '@solana/web3.js'
 import base58 from 'bs58';
 import { DEX_PROGRAMS } from '../constants';
 import { TradingBot } from '../trading/trading-bot';
-
+import logger from '../logger';
 
 
 export class TokenScanner {
@@ -243,6 +243,7 @@ export class TokenScanner {
       }
       if (liquidity.length > 0) {
         console.log('Found liquidity events:', liquidity);
+        logger.info(liquidity, "liquidity.log");
       }
     } catch (error) {
       //console.error('Error parsing transaction:', error);
