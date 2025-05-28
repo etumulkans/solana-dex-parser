@@ -1,4 +1,4 @@
-import { TokenScanner } from '../scanner/token-scanner';
+import { TokenScanner } from '../scanner/amm-grpc-test';
 
 async function main() {
   const TOKEN_ADDRESS = 'HueN6T2L2gZPUoEBBodaJS6ytXXHUWnmE4ii8nKfoZjF';
