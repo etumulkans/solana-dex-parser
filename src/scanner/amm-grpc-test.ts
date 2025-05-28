@@ -234,17 +234,22 @@ export class TokenScanner {
         tryUnknowDEX: true
       });
 
+      
+
 
       if (trades.length > 0) {
         
         this.processTrades(trades,liquidity);
+      }
+      if (liquidity.length > 0) {
+        console.log('Found liquidity events:', liquidity);
       }
     } catch (error) {
       //console.error('Error parsing transaction:', error);
       return;
     }
     } catch (error) {
-      console.error('Error processing transaction:', error);
+      //console.error('Error processing transaction:', error);
     }
   }
 
