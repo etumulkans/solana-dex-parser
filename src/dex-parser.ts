@@ -160,13 +160,13 @@ export class DexParser {
           const LiquidityParserClass = this.parseLiquidityMap[programId];
           if (LiquidityParserClass) {
             const parser = new LiquidityParserClass(adapter, transferActions, classifiedInstructions);
-            console.log('Found liquidity events:', parser.processLiquidity());
             result.liquidities.push(...parser.processLiquidity());
           }
         }
       }
       // Deduplicate trades
       if (result.trades.length > 0) {
+        console.log('Found liquidity events:', result.trades);
         result.trades = [...new Map(result.trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()];
       }
 
