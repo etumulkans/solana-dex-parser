@@ -230,6 +230,7 @@ export class TokenScanner {
       const trades = parser.parseTrades(txInfo as any, {
         tryUnknowDEX: true
       });
+      
       const liquidity = parser.parseLiquidity(txInfo as any, {
         tryUnknowDEX: true
       });
@@ -246,7 +247,9 @@ export class TokenScanner {
         const mint= liquidity[0].token0Mint == 'So11111111111111111111111111111111111111112' ? liquidity[0].token1Mint : liquidity[0].token0Mint;
         const solAmount = liquidity[0].token0Mint == 'So11111111111111111111111111111111111111112' ? liquidity[0].token0Amount : liquidity[0].token1Amount;
         const now = Math.floor(Date.now() / 1000);
-        logger.info(`${now - liquidity[0].timestamp}  ${liquidity[0].type} https://neo.bullx.io/terminal?chainId=1399811149&address=${mint} sol:${solAmount} https://solscan.io/tx/${liquidity[0].signature}  `, "liquidity.log");
+        //logger.info(`${now - liquidity[0].timestamp}  ${liquidity[0].type} https://neo.bullx.io/terminal?chainId=1399811149&address=${mint} sol:${solAmount} https://solscan.io/tx/${liquidity[0].signature}  `, "liquidity.log");
+        console.log(`${now - liquidity[0].timestamp}  ${liquidity[0].type} https://neo.bullx.io/terminal?chainId=1399811149&address=${mint} sol:${solAmount} https://solscan.io/tx/${liquidity[0].signature}  `);
+     
       }
     } catch (error) {
       //console.error('Error parsing transaction:', error);
