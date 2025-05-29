@@ -133,6 +133,10 @@ export class TokenScanner {
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
     if (!data.transaction?.transaction) return;
+
+    const tstamp = data.block?.blockTime;
+    console.log(tstamp);
+
     if (data.transaction?.transaction) return;
 
 
