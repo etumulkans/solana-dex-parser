@@ -133,7 +133,9 @@ export class TokenScanner {
 
   private async handleData(data: SubscribeUpdate): Promise<void> {
     if (!data.transaction?.transaction) return;
-    
+    if (data.transaction?.transaction) return;
+
+
     try {
       //const sig = data.transaction.transaction.signature;
       //console.log(sig);
